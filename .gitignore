@@ -1,0 +1,34 @@
+# ===== Compilação =====
+obj/
+*.o
+*.d
+*.a
+*.so
+*.exe
+*.out
+*.elf
+
+# Binaries gerados pelas ferramentas
+/parser/parser
+/parser/run_tests
+/bnf2dsl/bnf2dsl
+/tools/*/*.out
+/tools/*/*.exe
+
+# ===== Editor/IDE =====
+# Ignorar tudo do VSCode exceto config do projeto
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# ===== Arquivos temporários =====
+*~
+*.swp
+*.swo
+*.tmp
+*.log
+
+# ===== Sistema Operacional =====
+.DS_Store
+Thumbs.db
