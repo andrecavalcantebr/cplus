@@ -1,0 +1,36 @@
+translation_unit   ::= { toplevel } EOF
+
+;toplevels
+ tplev_interface   ::= "interface" IDENT "{" { method_decl } "}" ";"?
+ tplev_class       ::= "class" IDENT [ "extends" IDENT ] [ "implements" ident_list ]
+                       "{" { class_member | access_block } "}" ";"?
+ toplevel          ::= tplev_interface | tplev_class | SEMI
+
+;lists/atoms
+ ident_list        ::= IDENT { "," IDENT }
+ access_kw         ::= "public" | "protected" | "private"
+ access_block      ::= access_kw ":" { class_member }
+
+;members (em class)
+ class_member      ::= field_decl | method_decl | SEMI
+
+;declarações
+ field_decl        ::= type_spec IDENT ";"
+ method_decl       ::= type_spec IDENT "(" param_list? ")" ";"
+
+;parâmetros (self explícito)
+ param_list        ::= param { "," param }
+ param             ::= type_spec IDENT
+
+;tipo simplificado (C23);
+; aceita tokens comuns: nomes + * e []
+ type_spec         ::= TYPEATOM { TYPEATOM }
+ TYPEATOM          ::= IDENT | PTR | LBRACK RBRACK | QUAL
+ PTR               ::= "*"
+ LBRACK            ::= "["
+ RBRACK            ::= "]"
+ QUAL              ::= "const" | "volatile" | "restrict" | "_Atomic"
+
+;tokens
+ IDENT             ::= /[A-Za-z_][A-Za-z0-9_]*/
+ SEMI              ::= ";"
