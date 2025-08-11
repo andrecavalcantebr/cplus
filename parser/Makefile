@@ -65,7 +65,7 @@ TEST_EXE := $(BIN_DIR)/run_tests
 # Código fonte de terceiros
 VENDOR_LIBS := mpc tgc
 VENDOR_SRC := $(foreach lib,$(VENDOR_LIBS),$(wildcard $(VENDOR_DIR)/$(lib)/*.c))
-VENDOR_OBJ := $(patsubst $(VENDOR_DIR)/%/%.c,$(BUILD_DIR)/vendor/%.o,$(VENDOR_SRC))
+VENDOR_OBJ := $(patsubst $(VENDOR_DIR)/%/%.c,$(BUILD_DIR)/vendor/%_%.o,$(VENDOR_SRC))
 
 # Compilador e flags
 CC := gcc
@@ -96,6 +96,10 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 
 # Compilar main separadamente
 $(MAIN_OBJ): $(MAIN_SRC) | $(BUILD_DIR)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+# Compilar qualquer ../vendor/<lib>/<file>.c -> $(BUILD_DIR)/<lib>_<file>.o
+$(BUILD_DIR)/%_%.o: $(VENDOR_DIR)/%/%.c | $(BUILD_DIR)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 # ========================
@@ -149,6 +153,9 @@ clean:
 	-@$(RM) -rv $(BIN_DIR)/$(PRJ_DIR) $(TEST_EXE) $(OBJ_BASE)
 
 # Dependências automáticas
+ifneq (,$(filter-out clean help vars,$(MAKECMDGOALS)))
 -include $(OBJ:.o=.d)
 -include $(TEST_OBJ:.o=.d)
 -include $(MAIN_OBJ:.o=.d)
+-include $(VENDOR_OBJ:.o=.d)
+endif
