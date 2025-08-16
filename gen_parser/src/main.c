@@ -354,6 +354,8 @@ static void generate_c(const char *grammar_path, char *raw_text, name_list *L)
         "#include <string.h>\n"
         "#include <mpc.h>\n"
         "\n"
+        "#include \"ast.h\"\n"
+        "\n"
         "static char* slurp(const char *path) {\n"
         "  FILE *f = fopen(path, \"rb\");\n"
         "  if (!f) {\n"
@@ -473,7 +475,7 @@ static void generate_c(const char *grammar_path, char *raw_text, name_list *L)
         "  if (mpc_parse(\"%s\", input_text, %s, &r)) {\n",
         start_cname, start_cname);
     printf(
-        "    mpc_ast_print(r.output);\n"
+        "    print_program(r.output);\n"
         "    mpc_ast_delete(r.output);\n"
         "  } else {\n"
         "    mpc_err_print(r.error);\n"

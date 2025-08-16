@@ -1,39 +1,66 @@
-ws           : /[ \t\r\n]*/ ;
-letter       : /[A-Za-z_]/ ;
-digit        : /[0-9]/ ;
-identifier   : <letter> /[A-Za-z0-9_]*/ ;
+/* ============================================================================
+ * grammar.mpc — Cplus (C23+)
+ * Classes, interfaces, sections, methods and fields
+ * Compatible with gen_parser (mpca_lang)
+ * Generics level 1 (List<int>, Map<K,V>), no nesting yet
+ * ========================================================================== */
 
-kw_interface : "interface" ;
-kw_class     : "class" ;
-kw_public    : "public" ;
-kw_private   : "private" ;
-kw_protected : "protected" ;
+/* ---- Lexical & trivia ---- */
+ws            : /([ \t\r\n]|\/\/[^\n]*\n|\/\*([^*]|\*+[^*/])*\*+\/)*/ ;
+letter        : /[A-Za-z_]/ ;
+digit         : /[0-9]/ ;
+identifier    : <letter> /[A-Za-z0-9_]*/ ;
 
-lbrace       : "{" ;
-rbrace       : "}" ;
-semi         : ";" ;
-colon        : ":" ;
-lparen       : "(" ;
-rparen       : ")" ;
+/* ---- Keywords ---- */
+kw_interface  : "interface" ;
+kw_class      : "class" ;
+kw_public     : "public" ;
+kw_private    : "private" ;
+kw_protected  : "protected" ;
 
-type         : <identifier> ;
-method_name  : <identifier> ;
-method_decl  : <type> <ws> <method_name> <ws> <lparen> <ws> <rparen> <ws> <semi> ;
+/* ---- Symbols ---- */
+lbrace        : "{" ;
+rbrace        : "}" ;
+semi          : ";" ;
+colon         : ":" ;
+lparen        : "(" ;
+rparen        : ")" ;
+langle        : "<" ;
+rangle        : ">" ;
+comma         : "," ;
 
-access_kw    : <kw_public> | <kw_private> | <kw_protected> ;
-section      : <access_kw> <ws> <colon> <ws> <member>* ;
+/* ---- Types (level 1 generics) ---- */
+type_name     : <identifier> ;
+type_args     : <langle> <ws> <type_name> (<ws> <comma> <ws> <type_name>)* <ws> <rangle> ;
+type          : <type_name> (<ws> <type_args>)? ;
 
-member       : <method_decl> ;
+/* ---- Parameters and members ---- */
+param         : <type> <ws> <identifier> ;
+param_list    : <param> (<ws> <comma> <ws> <param>)* ;
+param_list_opt: (<param_list>)? ;
 
-interface    : <kw_interface> <ws> <identifier> <ws>
-               <lbrace> <ws>
-                 (<kw_public> <ws> <colon> <ws>)?
-                 <member>* <ws>
-               <rbrace> <ws> <semi> ;
+method_name   : <identifier> ;
+method_decl   : <type> <ws> <method_name> <ws> <lparen> <ws> <param_list_opt> <ws> <rparen> <ws> <semi> ;
 
-class        : <kw_class> <ws> <identifier> <ws>
-               <lbrace> <ws>
-                 (<section> | <member>)* <ws>
-               <rbrace> <ws> <semi> ;
+field_decl    : <type> <ws> <identifier> <ws> <semi> ;
+member        : <method_decl> | <field_decl> ;
 
-program      : <ws> (<interface> | <class>)+ <ws> ;
+/* ---- Access sections ---- */
+access_kw     : <kw_public> | <kw_private> | <kw_protected> ;
+section       : <access_kw> <ws> <colon> <ws> <member>* ;
+
+/* ---- Interface (methods only; optional 'public:' at start) ---- */
+interface     : <kw_interface> <ws> <identifier> <ws>
+                <lbrace> <ws>
+                  (<kw_public> <ws> <colon> <ws>)?
+                  <method_decl>* <ws>
+                <rbrace> <ws> <semi> ;
+
+/* ---- Class ---- */
+class         : <kw_class> <ws> <identifier> <ws>
+                <lbrace> <ws>
+                  (<section> | <member>)* <ws>
+                <rbrace> <ws> <semi> ;
+
+/* ---- Program ---- */
+program       : <ws> (<interface> | <class>)+ <ws> ;
