@@ -41,82 +41,70 @@ static char* slurp(const char *path) {
 }
 
 static const char *GRAMMAR =
+  "bom           : /\\xEF\\xBB\\xBF/ ;\n"
   "ws            : /([[:space:]]|\\/\\/[^\\n]*|\\/\\*([^*]|\\*+[^*\\/])*\\*+\\/)*/ ;\n"
   "letter        : /[A-Za-z_]/ ;\n"
-  "digit         : /[0-9]/ ;\n"
-  "identifier    : <letter> /[A-Za-z0-9_]*/ ;\n"
-  "\n"
+  "alnum         : /[A-Za-z0-9_]/ ;\n"
+  "identifier    : <letter> <alnum>* ;\n"
   "kw_interface  : \"interface\" ;\n"
   "kw_class      : \"class\" ;\n"
   "kw_public     : \"public\" ;\n"
   "kw_private    : \"private\" ;\n"
   "kw_protected  : \"protected\" ;\n"
-  "\n"
+  "type_name     : <identifier> ;\n"
+  "type          : <type_name> ;\n"
   "lbrace        : \"{\" ;\n"
   "rbrace        : \"}\" ;\n"
-  "semi          : \";\" ;\n"
-  "colon         : \":\" ;\n"
   "lparen        : \"(\" ;\n"
   "rparen        : \")\" ;\n"
-  "langle        : \"<\" ;\n"
-  "rangle        : \">\" ;\n"
+  "semi          : \";\" ;\n"
   "comma         : \",\" ;\n"
-  "\n"
-  "type_name     : <identifier> ;\n"
-  "type_args     : <langle> <ws> <type_name> (<ws> <comma> <ws> <type_name>)* <ws> <rangle> ;\n"
-  "type          : <type_name> (<ws> <type_args>)? ;\n"
-  "\n"
-  "param         : <type> <ws> <identifier> ;\n"
-  "param_list    : <param> (<ws> <comma> <ws> <param>)* ;\n"
-  "param_list_opt: (<param_list>)? ;\n"
-  "\n"
+  "colon         : \":\" ;\n"
+  "param         : <type> <identifier> ;\n"
+  "param_list    : <param> ( <comma> <param> )* ;\n"
+  "params        : <lparen> ( <param_list> )? <rparen> ;\n"
   "method_name   : <identifier> ;\n"
-  "method_decl   : <type> <ws> <method_name> <ws> <lparen> <ws> <param_list_opt> <ws> <rparen> <ws> <semi> ;\n"
-  "\n"
-  "field_decl    : <type> <ws> <identifier> <ws> <semi> ;\n"
+  "method_decl   : <type> <method_name> <params> <semi> ;\n"
+  "field_decl    : <type> <identifier> <semi> ;\n"
   "member        : <method_decl> | <field_decl> ;\n"
-  "\n"
   "access_kw     : <kw_public> | <kw_private> | <kw_protected> ;\n"
-  "section       : <access_kw> <ws> <colon> <ws> <member>* ;\n"
-  "\n"
-  "interface     : <kw_interface> <ws> <identifier> <ws>\n"
-  "                <lbrace> <ws>\n"
-  "                  (<kw_public> <ws> <colon> <ws>)?\n"
-  "                  <method_decl>* <ws>\n"
+  "section       : <access_kw> <colon>\n"
+  "                <ws>\n"
+  "                ( <member> <ws> )*\n"
+  "              ;\n"
+  "interface     : <kw_interface> <ws> <identifier> <ws> <lbrace> <ws>\n"
+  "                ( <method_decl> <ws> )*\n"
   "                <rbrace> <ws> <semi> ;\n"
-  "\n"
-  "class         : <kw_class> <ws> <identifier> <ws>\n"
-  "                <lbrace> <ws>\n"
-  "                  (<section> | <member>)* <ws>\n"
+  "class         : <kw_class> <ws> <identifier> <ws> <lbrace> <ws>\n"
+  "                ( <section> <ws>\n"
+  "                | <member>  <ws>    /* allow members outside sections */\n"
+  "                )*\n"
   "                <rbrace> <ws> <semi> ;\n"
-  "\n"
-  "program       : <ws> (<interface> | <class>)+ <ws> ;\n"
+  "program       : <ws> ( <bom> <ws> )? ( <interface> | <class> )+ <ws> ;\n"
 ;
 
+static mpc_parser_t *bom;
 static mpc_parser_t *ws;
 static mpc_parser_t *letter;
-static mpc_parser_t *digit;
+static mpc_parser_t *alnum;
 static mpc_parser_t *identifier;
 static mpc_parser_t *kw_interface;
 static mpc_parser_t *kw_class;
 static mpc_parser_t *kw_public;
 static mpc_parser_t *kw_private;
 static mpc_parser_t *kw_protected;
+static mpc_parser_t *type_name;
+static mpc_parser_t *type;
 static mpc_parser_t *lbrace;
 static mpc_parser_t *rbrace;
-static mpc_parser_t *semi;
-static mpc_parser_t *colon;
 static mpc_parser_t *lparen;
 static mpc_parser_t *rparen;
-static mpc_parser_t *langle;
-static mpc_parser_t *rangle;
+static mpc_parser_t *semi;
 static mpc_parser_t *comma;
-static mpc_parser_t *type_name;
-static mpc_parser_t *type_args;
-static mpc_parser_t *type;
+static mpc_parser_t *colon;
 static mpc_parser_t *param;
 static mpc_parser_t *param_list;
-static mpc_parser_t *param_list_opt;
+static mpc_parser_t *params;
 static mpc_parser_t *method_name;
 static mpc_parser_t *method_decl;
 static mpc_parser_t *field_decl;
@@ -128,30 +116,28 @@ static mpc_parser_t *class;
 static mpc_parser_t *program;
 
 static void build_parsers(void) {
+  bom = mpc_new("bom");
   ws = mpc_new("ws");
   letter = mpc_new("letter");
-  digit = mpc_new("digit");
+  alnum = mpc_new("alnum");
   identifier = mpc_new("identifier");
   kw_interface = mpc_new("kw_interface");
   kw_class = mpc_new("kw_class");
   kw_public = mpc_new("kw_public");
   kw_private = mpc_new("kw_private");
   kw_protected = mpc_new("kw_protected");
+  type_name = mpc_new("type_name");
+  type = mpc_new("type");
   lbrace = mpc_new("lbrace");
   rbrace = mpc_new("rbrace");
-  semi = mpc_new("semi");
-  colon = mpc_new("colon");
   lparen = mpc_new("lparen");
   rparen = mpc_new("rparen");
-  langle = mpc_new("langle");
-  rangle = mpc_new("rangle");
+  semi = mpc_new("semi");
   comma = mpc_new("comma");
-  type_name = mpc_new("type_name");
-  type_args = mpc_new("type_args");
-  type = mpc_new("type");
+  colon = mpc_new("colon");
   param = mpc_new("param");
   param_list = mpc_new("param_list");
-  param_list_opt = mpc_new("param_list_opt");
+  params = mpc_new("params");
   method_name = mpc_new("method_name");
   method_decl = mpc_new("method_decl");
   field_decl = mpc_new("field_decl");
@@ -164,7 +150,7 @@ static void build_parsers(void) {
 }
 
 static void cleanup_parsers(void) {
-  mpc_cleanup(33, ws, letter, digit, identifier, kw_interface, kw_class, kw_public, kw_private, kw_protected, lbrace, rbrace, semi, colon, lparen, rparen, langle, rangle, comma, type_name, type_args, type, param, param_list, param_list_opt, method_name, method_decl, field_decl, member, access_kw, section, interface, class, program);
+  mpc_cleanup(31, bom, ws, letter, alnum, identifier, kw_interface, kw_class, kw_public, kw_private, kw_protected, type_name, type, lbrace, rbrace, lparen, rparen, semi, comma, colon, param, param_list, params, method_name, method_decl, field_decl, member, access_kw, section, interface, class, program);
 }
 
 int main(int argc, char **argv) {
@@ -184,30 +170,28 @@ int main(int argc, char **argv) {
   mpc_err_t *err = mpca_lang(
     MPCA_LANG_DEFAULT,
     GRAMMAR,
+    bom,
     ws,
     letter,
-    digit,
+    alnum,
     identifier,
     kw_interface,
     kw_class,
     kw_public,
     kw_private,
     kw_protected,
+    type_name,
+    type,
     lbrace,
     rbrace,
-    semi,
-    colon,
     lparen,
     rparen,
-    langle,
-    rangle,
+    semi,
     comma,
-    type_name,
-    type_args,
-    type,
+    colon,
     param,
     param_list,
-    param_list_opt,
+    params,
     method_name,
     method_decl,
     field_decl,

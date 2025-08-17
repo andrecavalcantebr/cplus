@@ -1,50 +1,40 @@
+bom           : /\xEF\xBB\xBF/ ;
 ws            : /([[:space:]]|\/\/[^\n]*|\/\*([^*]|\*+[^*\/])*\*+\/)*/ ;
 letter        : /[A-Za-z_]/ ;
-digit         : /[0-9]/ ;
-identifier    : <letter> /[A-Za-z0-9_]*/ ;
-
+alnum         : /[A-Za-z0-9_]/ ;
+identifier    : <letter> <alnum>* ;
 kw_interface  : "interface" ;
 kw_class      : "class" ;
 kw_public     : "public" ;
 kw_private    : "private" ;
 kw_protected  : "protected" ;
-
+type_name     : <identifier> ;
+type          : <type_name> ;
 lbrace        : "{" ;
 rbrace        : "}" ;
-semi          : ";" ;
-colon         : ":" ;
 lparen        : "(" ;
 rparen        : ")" ;
-langle        : "<" ;
-rangle        : ">" ;
+semi          : ";" ;
 comma         : "," ;
-
-type_name     : <identifier> ;
-type_args     : <langle> <ws> <type_name> (<ws> <comma> <ws> <type_name>)* <ws> <rangle> ;
-type          : <type_name> (<ws> <type_args>)? ;
-
-param         : <type> <ws> <identifier> ;
-param_list    : <param> (<ws> <comma> <ws> <param>)* ;
-param_list_opt: (<param_list>)? ;
-
+colon         : ":" ;
+param         : <type> <identifier> ;
+param_list    : <param> ( <comma> <param> )* ;
+params        : <lparen> ( <param_list> )? <rparen> ;
 method_name   : <identifier> ;
-method_decl   : <type> <ws> <method_name> <ws> <lparen> <ws> <param_list_opt> <ws> <rparen> <ws> <semi> ;
-
-field_decl    : <type> <ws> <identifier> <ws> <semi> ;
+method_decl   : <type> <method_name> <params> <semi> ;
+field_decl    : <type> <identifier> <semi> ;
 member        : <method_decl> | <field_decl> ;
-
 access_kw     : <kw_public> | <kw_private> | <kw_protected> ;
-section       : <access_kw> <ws> <colon> <ws> <member>* ;
-
-interface     : <kw_interface> <ws> <identifier> <ws>
-                <lbrace> <ws>
-                  (<kw_public> <ws> <colon> <ws>)?
-                  <method_decl>* <ws>
+section       : <access_kw> <colon>
+                <ws>
+                ( <member> <ws> )*
+              ;
+interface     : <kw_interface> <ws> <identifier> <ws> <lbrace> <ws>
+                ( <method_decl> <ws> )*
                 <rbrace> <ws> <semi> ;
-
-class         : <kw_class> <ws> <identifier> <ws>
-                <lbrace> <ws>
-                  (<section> | <member>)* <ws>
+class         : <kw_class> <ws> <identifier> <ws> <lbrace> <ws>
+                ( <section> <ws>
+                | <member>  <ws>    /* allow members outside sections */
+                )*
                 <rbrace> <ws> <semi> ;
-
-program       : <ws> (<interface> | <class>)+ <ws> ;
+program       : <ws> ( <bom> <ws> )? ( <interface> | <class> )+ <ws> ;

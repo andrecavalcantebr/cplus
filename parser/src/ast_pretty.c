@@ -1,38 +1,48 @@
 /*
     FILE: ast_pretty.c
-    DESCR: Printing of the AST
+    DESCR: Pretty-printer for MPC AST of Cplus (classes, interfaces, sections, fields, methods)
     AUTHOR: Andre Cavalcante
     DATE: August, 2025
     LICENSE: CC BY-SA
 */
 
-#include <ctype.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
+#include <ctype.h>
+#include <mpc.h>
 
-#include "ast.h"
+/* Forward declarations to avoid implicit warnings (and to control order) */
+static void print_type(const mpc_ast_t *type, int level);
+static void print_param(const mpc_ast_t *param, int level);
+void print_program(const mpc_ast_t *root);
 
-// pretty printing AST
-
-/* ========= util: testes de tag ========= */
+/* =============================================================
+ * Small helpers
+ * ============================================================= */
 static bool has_tag(const mpc_ast_t *n, const char *tag)
 {
     return n && n->tag && strstr(n->tag, tag) != NULL;
 }
 
-/* ========= util: coleta de texto (concatena folhas) ========= */
 static void collect_text_rec(const mpc_ast_t *n, char *buf, size_t cap)
 {
     if (!n || !buf || cap == 0)
         return;
-    if (n->children == 0)
+    if (n->children_num == 0)
     {
-        /* Folha: se tem contents visível (regex ou string), anexa */
         if (n->contents && *n->contents)
         {
-            /* p.ex. "void", "public", "X", "{", "}" */
-            strncat(buf, n->contents, cap - strlen(buf) - 1);
+            size_t blen = strlen(buf);
+            size_t nlen = strlen(n->contents);
+            if (blen < cap - 1)
+            {
+                size_t cpy = nlen;
+                if (blen + cpy >= cap)
+                    cpy = cap - blen - 1;
+                memcpy(buf + blen, n->contents, cpy);
+                buf[blen + cpy] = '\0';
+            }
         }
         return;
     }
@@ -42,16 +52,19 @@ static void collect_text_rec(const mpc_ast_t *n, char *buf, size_t cap)
     }
 }
 
-/* Extrai “texto lógico” de um nó (útil p/ identifier, type simples etc.) */
+/* Concatenate leaf contents and normalize spaces */
 static void node_text(const mpc_ast_t *n, char *out, size_t cap)
 {
+    if (!out || cap == 0)
+        return;
     out[0] = '\0';
     collect_text_rec(n, out, cap);
-    /* compacta espaços múltiplos */
+    /* compact spaces */
     size_t w = 0;
     for (size_t r = 0; out[r] && w + 1 < cap; r++)
     {
-        if (isspace((unsigned char)out[r]))
+        unsigned char ch = (unsigned char)out[r];
+        if (isspace(ch))
         {
             if (w && out[w - 1] != ' ')
                 out[w++] = ' ';
@@ -64,7 +77,6 @@ static void node_text(const mpc_ast_t *n, char *out, size_t cap)
     out[w] = '\0';
 }
 
-/* ========= util: busca de filhos ========= */
 static const mpc_ast_t *first_child_tag(const mpc_ast_t *n, const char *tag)
 {
     if (!n)
@@ -77,64 +89,75 @@ static const mpc_ast_t *first_child_tag(const mpc_ast_t *n, const char *tag)
     return NULL;
 }
 
-/* procura um identifier que NÃO esteja dentro do 'type' e apareça após ele */
-static const mpc_ast_t *find_id_after_type(const mpc_ast_t *m)
-{
-    if (!m)
-        return NULL;
-
-    /* 1) tente via method_name > identifier (caminho “bonito”) */
-    const mpc_ast_t *name = first_child_tag(m, "method_name");
-    if (name)
-    {
-        const mpc_ast_t *id = first_child_tag(name, "identifier");
-        if (id)
-            return id;
-    }
-
-    /* 2) estratégia: achar o primeiro 'identifier' depois do nó 'type' do retorno */
-    bool seen_type = false;
-    for (int i = 0; i < m->children_num; i++)
-    {
-        const mpc_ast_t *c = m->children[i];
-        if (!seen_type && has_tag(c, "type"))
-        {
-            seen_type = true;
-            continue;
-        }
-        if (!seen_type)
-            continue;
-
-        /* Se esse filho tiver (ou for) um identifier, pegamos */
-        if (has_tag(c, "identifier"))
-            return c;
-        const mpc_ast_t *id = first_child_tag(c, "identifier");
-        if (id)
-            return id;
-    }
-
-    /* 3) fallback bem permissivo: busca em profundidade o primeiro 'identifier'
-          que não esteja dentro de um 'type' (para evitar pegar tipo do retorno). */
-    for (int i = 0; i < m->children_num; i++)
-    {
-        const mpc_ast_t *c = m->children[i];
-        if (has_tag(c, "type"))
-            continue; /* pula subárvore do tipo */
-        const mpc_ast_t *id = first_child_tag(c, "identifier");
-        if (id)
-            return id;
-    }
-    return NULL;
-}
-
-/* ========= impressão com indent ========= */
 static void put_indent(int level)
 {
     for (int i = 0; i < level; i++)
         fputs("  ", stdout);
 }
 
-/* ========= impressão de “type” (simples; já funciona c/ genéricos nível 1) ========= */
+/* =============================================================
+ * Identifier helpers (ignore any subtree tagged as 'type')
+ * ============================================================= */
+
+/* DFS that returns an identifier, skipping any subtree tagged as 'type'.
+   If rightmost=true, prefer the rightmost identifier; otherwise leftmost. */
+static const mpc_ast_t *find_id_excluding_type_dfs(const mpc_ast_t *n, bool rightmost)
+{
+    if (!n)
+        return NULL;
+    if (has_tag(n, "type"))
+        return NULL; /* do not enter type subtrees */
+
+    /* check self first */
+    if (has_tag(n, "identifier"))
+        return n;
+
+    int start = rightmost ? n->children_num - 1 : 0;
+    int step = rightmost ? -1 : 1;
+
+    for (int i = start; rightmost ? (i >= 0) : (i < n->children_num); i += step)
+    {
+        const mpc_ast_t *c = n->children[i];
+        const mpc_ast_t *id = find_id_excluding_type_dfs(c, rightmost);
+        if (id)
+            return id;
+    }
+    return NULL;
+}
+
+/* Right-most identifier NOT inside a 'type' subtree. */
+static const mpc_ast_t *rightmost_id_outside_type(const mpc_ast_t *m)
+{
+    return find_id_excluding_type_dfs(m, true);
+}
+
+/* First identifier AFTER return 'type' and BEFORE '(' — best for method names */
+static const mpc_ast_t *first_id_after_type_until_lparen(const mpc_ast_t *m)
+{
+    if (!m)
+        return NULL;
+    bool seen_type = false;
+    for (int i = 0; i < m->children_num; i++)
+    {
+        const mpc_ast_t *c = m->children[i];
+        if (!seen_type)
+        {
+            if (has_tag(c, "type"))
+                seen_type = true;
+            continue;
+        }
+        if (has_tag(c, "lparen"))
+            break; /* stop before params */
+        const mpc_ast_t *id = find_id_excluding_type_dfs(c, false);
+        if (id)
+            return id;
+    }
+    return NULL;
+}
+
+/* =============================================================
+ * Type & Param (definitions before first use)
+ * ============================================================= */
 static void print_type(const mpc_ast_t *type, int level)
 {
     if (!type)
@@ -142,24 +165,21 @@ static void print_type(const mpc_ast_t *type, int level)
     char tbuf[256];
     node_text(type, tbuf, sizeof tbuf);
     put_indent(level);
-    printf("Type: %s\n", *tbuf ? tbuf : "<anon>");
+    printf("Type: %s\n", *tbuf ? tbuf : "<unknown>");
 }
 
-/* ========= parâmetros ========= */
 static void print_param(const mpc_ast_t *param, int level)
 {
     if (!param)
         return;
     const mpc_ast_t *ptype = first_child_tag(param, "type");
-    const mpc_ast_t *pname = find_id_after_type_generic(param);
+    /* pick the identifier that is not part of the type */
+    const mpc_ast_t *pname = find_id_excluding_type_dfs(param, true);
 
     put_indent(level);
     printf("Param:\n");
     if (ptype)
-    {
-        put_indent(level + 1);
         print_type(ptype, level + 1);
-    }
     if (pname)
     {
         char nbuf[128] = {0};
@@ -169,27 +189,90 @@ static void print_param(const mpc_ast_t *param, int level)
     }
 }
 
-/* ========= lista de parâmetros ========= */
-static void print_param_list(const mpc_ast_t *plist, int level)
+/* =============================================================
+ * Param list helpers
+ * ============================================================= */
+
+/* Diz se existe pelo menos um 'param' neste nó OU embaixo dele (shape normal ou achatado) */
+static bool has_any_param(const mpc_ast_t *plist)
 {
     if (!plist)
-        return;
-    /* param_list := param ( , param )* — no AST os <param> aparecem direto */
+        return false;
+
+    /* o próprio nó pode ser um 'param' */
+    if (has_tag(plist, "param"))
+        return true;
+
     for (int i = 0; i < plist->children_num; i++)
     {
         const mpc_ast_t *c = plist->children[i];
         if (has_tag(c, "param"))
+            return true;
+
+        /* caminhar por containers intermediários */
+        if (has_tag(c, "param_list") || has_tag(c, "param_list_opt"))
+        {
+            if (has_any_param(c))
+                return true;
+        }
+    }
+    return false;
+}
+
+/* Imprime todos os params, aceitando shape container (param_list/param_list_opt) e shape achatado */
+static void print_param_list(const mpc_ast_t *plist, int level)
+{
+    if (!plist)
+        return;
+
+    /* shape achatado: o próprio nó já é um 'param' */
+    if (has_tag(plist, "param"))
+    {
+        print_param(plist, level);
+        return;
+    }
+
+    for (int i = 0; i < plist->children_num; i++)
+    {
+        const mpc_ast_t *c = plist->children[i];
+
+        if (has_tag(c, "param"))
+        {
             print_param(c, level);
+        }
+        else if (has_tag(c, "param_list") || has_tag(c, "param_list_opt"))
+        {
+            /* recursivo para atravessar wrappers */
+            print_param_list(c, level);
+        }
     }
 }
 
-/* ========= métodos ========= */
+/* =============================================================
+ * Members: methods and fields
+ * ============================================================= */
 static void print_method(const mpc_ast_t *m, int level)
 {
     if (!m)
         return;
     const mpc_ast_t *ret = first_child_tag(m, "type");
-    const mpc_ast_t *idnod = find_id_after_type(m);
+    const mpc_ast_t *name = first_child_tag(m, "method_name");
+    const mpc_ast_t *idnod = NULL;
+
+    if (name)
+    {
+        /* try child identifier; if absent, use the node itself */
+        idnod = first_child_tag(name, "identifier");
+        if (!idnod)
+            idnod = name;
+    }
+    if (!idnod)
+    {
+        idnod = first_id_after_type_until_lparen(m);
+        if (!idnod)
+            idnod = rightmost_id_outside_type(m);
+    }
+
     const mpc_ast_t *plist = first_child_tag(m, "param_list");
     if (!plist)
         plist = first_child_tag(m, "param_list_opt");
@@ -208,7 +291,7 @@ static void print_method(const mpc_ast_t *m, int level)
         put_indent(level + 1);
         printf("Return Type: %s\n", *tbuf ? tbuf : "<unknown>");
     }
-    if (plist)
+    if (plist && has_any_param(plist))
     {
         put_indent(level + 1);
         puts("Params");
@@ -216,12 +299,10 @@ static void print_method(const mpc_ast_t *m, int level)
     }
 }
 
-/* ========= campos ========= */
 static void print_field(const mpc_ast_t *f, int level)
 {
     const mpc_ast_t *ft = first_child_tag(f, "type");
-    /* nome do campo: primeiro identifier APÓS o 'type' */
-    const mpc_ast_t *fid = find_id_after_type_generic(f);
+    const mpc_ast_t *fid = rightmost_id_outside_type(f);
 
     char nbuf[128] = {0};
     if (fid)
@@ -230,15 +311,13 @@ static void print_field(const mpc_ast_t *f, int level)
     put_indent(level);
     printf("Field %s\n", *nbuf ? nbuf : "<anon>");
     if (ft)
-    {
-        put_indent(level + 1);
         print_type(ft, level + 1);
-    }
 }
 
-/* ========= membro (método | campo) ========= */
 static void print_member(const mpc_ast_t *m, int level)
 {
+    if (!m)
+        return;
     if (has_tag(m, "method_decl"))
     {
         print_method(m, level);
@@ -249,14 +328,16 @@ static void print_member(const mpc_ast_t *m, int level)
         print_field(m, level);
         return;
     }
-    /* Fallback: tenta heurística (gramática antiga só tinha method_decl) */
+    /* heuristics for older grammars */
     if (first_child_tag(m, "method_name") || first_child_tag(m, "lparen"))
     {
         print_method(m, level);
     }
 }
 
-/* ========= seção de acesso ========= */
+/* =============================================================
+ * Sections / Interface / Class / Program
+ * ============================================================= */
 static void print_section(const mpc_ast_t *sec, int level)
 {
     if (!sec)
@@ -269,7 +350,6 @@ static void print_section(const mpc_ast_t *sec, int level)
     put_indent(level);
     printf("Section %s\n", *akbuf ? akbuf : "<access>");
 
-    /* membros dentro da seção */
     for (int i = 0; i < sec->children_num; i++)
     {
         const mpc_ast_t *c = sec->children[i];
@@ -278,7 +358,6 @@ static void print_section(const mpc_ast_t *sec, int level)
     }
 }
 
-/* ========= interface ========= */
 static void print_interface(const mpc_ast_t *itf, int level)
 {
     const mpc_ast_t *id = first_child_tag(itf, "identifier");
@@ -288,18 +367,17 @@ static void print_interface(const mpc_ast_t *itf, int level)
 
     put_indent(level);
     printf("Interface %s\n", *nbuf ? nbuf : "<anon>");
+
     for (int i = 0; i < itf->children_num; i++)
     {
         const mpc_ast_t *c = itf->children[i];
         if (has_tag(c, "method_decl"))
             print_member(c, level + 1);
-        /* algumas gramáticas aceitam 'public:' opcional no topo */
         if (has_tag(c, "section"))
             print_section(c, level + 1);
     }
 }
 
-/* ========= classe ========= */
 static void print_class(const mpc_ast_t *cls, int level)
 {
     const mpc_ast_t *id = first_child_tag(cls, "identifier");
@@ -314,43 +392,67 @@ static void print_class(const mpc_ast_t *cls, int level)
     {
         const mpc_ast_t *c = cls->children[i];
         if (has_tag(c, "section"))
-        {
             print_section(c, level + 1);
-        }
         else if (has_tag(c, "member"))
-        {
-            /* membros “soltos” (sem seção explícita) */
             print_member(c, level + 1);
-        }
     }
 }
 
-/* ========= programa ========= */
 void print_program(const mpc_ast_t *root)
 {
     if (!root)
         return;
-    /* dependendo de como o mpca_lang é invocado, o topo pode ser 'program'
-       ou conter um nó 'program' como filho */
     const mpc_ast_t *prog = root;
     if (!has_tag(prog, "program"))
     {
-        prog = first_child_tag(root, "program");
-        if (!prog)
-            prog = root;
+        const mpc_ast_t *maybe = first_child_tag(root, "program");
+        prog = maybe ? maybe : root;
     }
 
     puts("Program");
+    bool printed_any = false;
     for (int i = 0; i < prog->children_num; i++)
     {
         const mpc_ast_t *c = prog->children[i];
         if (has_tag(c, "interface"))
+        {
             print_interface(c, 1);
+            printed_any = true;
+        }
         else if (has_tag(c, "class"))
+        {
             print_class(c, 1);
+            printed_any = true;
+        }
         else if (has_tag(c, "section"))
+        {
             print_section(c, 1);
+            printed_any = true;
+        }
         else if (has_tag(c, "member"))
+        {
             print_member(c, 1);
+            printed_any = true;
+        }
+    }
+    /* Fallback: if nothing printed (unexpected AST shape), look one level down */
+    if (!printed_any)
+    {
+        for (int i = 0; i < prog->children_num; i++)
+        {
+            const mpc_ast_t *c = prog->children[i];
+            const mpc_ast_t *itf = first_child_tag(c, "interface");
+            const mpc_ast_t *cls = first_child_tag(c, "class");
+            if (itf)
+            {
+                print_interface(itf, 1);
+                printed_any = true;
+            }
+            if (cls)
+            {
+                print_class(cls, 1);
+                printed_any = true;
+            }
+        }
     }
 }

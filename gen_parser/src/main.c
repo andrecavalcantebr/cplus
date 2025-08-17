@@ -47,91 +47,173 @@ static char *slurp(const char *path, size_t *out_len)
     return buf;
 }
 
-/* =========================================================================
- * util: remover comentários //... e / * ... * /
- * (mantém quebras de linha)
- * ========================================================================= */
-static void strip_comments(char *s)
+/* Remove C/C++ comments while preserving regex/strings/chars in MPC grammar.
+ * Also collapses whitespace runs (outside literals) to a single space.
+ * Returns a newly malloc'ed buffer that the caller must free.
+ */
+static char *strip_comments_and_collapse(const char *src)
 {
     enum
     {
-        NORM,
-        SLASH,
-        LINECMT,
-        BLOCKCMT,
-        STARINBLOCK
-    } st = NORM;
+        S_NORMAL,
+        S_LINE,
+        S_BLOCK,
+        S_DQ,
+        S_SQ,
+        S_REGEX
+    } st = S_NORMAL;
+    const char *p = src;
+    char *out = malloc(strlen(src) + 1);
+    if (!out)
+        return NULL;
+    size_t w = 0;
+    int prev_was_space = 0;
 
-    for (char *p = s; *p; ++p)
+    while (*p)
     {
         char c = *p;
 
+        /* Helpers for escapes inside literals */
+        int is_escape = 0;
+        if (st == S_DQ || st == S_SQ || st == S_REGEX)
+        {
+            const char *q = p - 1;
+            int backslashes = 0;
+            while (q >= src && *q == '\\')
+            {
+                backslashes++;
+                q--;
+            }
+            is_escape = (backslashes % 2) == 1; /* odd number of preceding backslashes */
+        }
+
         switch (st)
         {
-        case NORM:
+
+        case S_NORMAL:
+            if (c == '/' && p[1] == '/')
+            {
+                st = S_LINE;
+                p += 2;
+                continue;
+            }
+            if (c == '/' && p[1] == '*')
+            {
+                st = S_BLOCK;
+                p += 2;
+                continue;
+            }
+
+            /* entering literals */
+            if (c == '"')
+            {
+                st = S_DQ;
+                out[w++] = c;
+                p++;
+                prev_was_space = 0;
+                continue;
+            }
+            if (c == '\'')
+            {
+                st = S_SQ;
+                out[w++] = c;
+                p++;
+                prev_was_space = 0;
+                continue;
+            }
             if (c == '/')
             {
-                st = SLASH;
+                /* Heuristic: MPC regex literals always start with '/', and when it's
+                   a regex, the next non-escaped '/' closes it. We consider '/' as
+                   starting a regex unless it looks like division (identifier/number before).
+                 */
+                /* lookbehind: if previous non-space is alnum or ')' or '>' etc, it *might* be division.
+                   Para a gramática MPC, quase sempre aqui é REGEX; então trate como REGEX. */
+                st = S_REGEX;
+                out[w++] = c;
+                p++;
+                prev_was_space = 0;
+                continue;
             }
+
+            /* collapse whitespace outside literals */
+            if (c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\v' || c == '\f')
+            {
+                if (!prev_was_space)
+                {
+                    out[w++] = ' ';
+                    prev_was_space = 1;
+                }
+                p++;
+                continue;
+            }
+
+            /* normal char */
+            out[w++] = c;
+            p++;
+            prev_was_space = 0;
             break;
 
-        case SLASH:
-            if (c == '/')
-            {
-                *(p - 1) = ' ';
-                *p = ' ';
-                st = LINECMT;
+        case S_LINE:
+            if (c == '\n')
+            { /* end of line comment -> emit single space to separate tokens */
+                if (!prev_was_space)
+                {
+                    out[w++] = ' ';
+                    prev_was_space = 1;
+                }
+                st = S_NORMAL;
             }
-            else if (c == '*')
+            p++;
+            break;
+
+        case S_BLOCK:
+            if (c == '*' && p[1] == '/')
             {
-                *(p - 1) = ' ';
-                *p = ' ';
-                st = BLOCKCMT;
+                st = S_NORMAL;
+                p += 2;
             }
             else
-            {
-                st = NORM;
-            }
+                p++;
             break;
 
-        case LINECMT:
-            if (*p != '\n')
+        case S_DQ: /* double-quoted string */
+            out[w++] = c;
+            p++;
+            if (!is_escape && c == '"')
             {
-                *p = ' ';
+                st = S_NORMAL;
             }
-            else
-            {
-                st = NORM;
-            }
+            prev_was_space = 0;
             break;
 
-        case BLOCKCMT:
-            if (c != '\n')
+        case S_SQ: /* single-quoted char */
+            out[w++] = c;
+            p++;
+            if (!is_escape && c == '\'')
             {
-                *p = ' ';
+                st = S_NORMAL;
             }
-            if (c == '*')
-            {
-                st = STARINBLOCK;
-            }
+            prev_was_space = 0;
             break;
 
-        case STARINBLOCK:
-            if (*p != '\n')
+        case S_REGEX: /* /.../ regex literal */
+            out[w++] = c;
+            p++;
+            if (!is_escape && c == '/')
             {
-                *p = ' ';
+                st = S_NORMAL;
             }
-            if (c == '/')
-            {
-                st = NORM;
-            }
-            else if (c != '*')
-            {
-                st = BLOCKCMT;
-            }
+            prev_was_space = 0;
             break;
         }
     }
+
+    /* trim espaço final */
+    while (w > 0 && out[w - 1] == ' ')
+        w--;
+    out[w] = '\0';
+    return out;
 }
 
 /* =========================================================================
@@ -335,7 +417,7 @@ static void generate_c(const char *grammar_path, char *raw_text, name_list *L)
     (void)grammar_path;
 
     /* ----- pré-processar gramática: tirar comentários ----- */
-    strip_comments(raw_text);
+    strip_comments_and_collapse(raw_text);
 
     /* ----- Bloco: Cabeçalho do arquivo gerado ----- */
     printf(
