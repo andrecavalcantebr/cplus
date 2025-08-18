@@ -1,5 +1,6 @@
-📜 Especificação Resumida do Cplus
-1. Objetivo
+# Especificação Resumida do Cplus
+
+## Objetivo
 Extensão mínima de C23 para permitir programação orientada a objetos.
 
 Transpila para C puro legível e compilável por qualquer compilador C23.
@@ -10,168 +11,211 @@ Herança simples (apenas uma base) + interfaces múltiplas.
 
 Encapsulamento gerido no transpiler — código C gerado expõe tudo, mas regras são checadas no Cplus.
 
-2. Palavras reservadas
-typescript
-Copiar
-Editar
-class
-interface
-public
-protected
-private
-extends
-implements
-as         // cast estático para interface ou classe base
-new
-del
-3. Estrutura de classes
-3.1 Declaração
-cplus
-Copiar
-Editar
-class Motor extends Device implements IStartable, IStopable {
-public:
-    void init(Motor *self, int rpm);
-protected:
-    int rpm;
-private:
-    bool started;
-};
-3.2 Interfaces
-cplus
-Copiar
-Editar
-interface IStartable {
-    void start(IStartable *self);
-};
-Interfaces só têm métodos públicos abstratos.
+## Palavras reservadas
 
-Não possuem atributos.
+### class
+Define uma classe. Não mexe com a definição de struct padrão do C. Para você fazer uma classe em Cplus
+você usa `class` e não `struct`
 
-Classe que implementa interface deve fornecer todas as implementações.
+**Sintaxe básica:**
 
-4. Visibilidade
+```Java 
+class Foo {
+    // members declaration
+}
+```
+
+### interface
+Define uma interface. Uma `interface` só tem métodos públicos, portanto não admitem outros modificadores
+
+**Sintaxe básica:**
+
+```Java 
+interface IFoo {
+    // methods declaration
+}
+```
+
+### public, protected, private
+Modificadores de acesso dos membros
+
+**Sintaxe básica:**
+
+```C++ 
+class Foo {
+    public int f1(Foo *self);
+    protected char *getStr(Foo *self);
+    private char *msg;
+}
+```
+
+### extends
+Usado para definir a classe base no caso de herança em uma classe
+
+**Sintaxe básica:**
+```Java
+class Foo extends Bar {
+    // members declaration
+}
+```
+
+### implements
+Usado para definir o conjunto de interfaces implementadas em uma classe
+
+**Sintaxe básica:**
+
+```Java
+class Foo implements IClone, IBar {
+    // members declaration
+}
+```
+
+### as
+Usado para _cast_ estático
+
+**Sintaxe básica:**
+
+```Java
+auto c = obj as IClone
+```
+
+### new, del
+
+
+# Regras
+
+* Classe que implementa interface deve fornecer todas as implementações.
+
+* Visibilidade
+
 public → acessível por qualquer código.
 
 protected → acessível pela própria classe e subclasses.
 
 private → acessível apenas pela própria classe.
 
-Interfaces → apenas public.
+* Interfaces → apenas public.
 
-5. Herança
-Simples: apenas uma extends.
+* Herança
 
-Layout: base é o primeiro campo da struct derivada (compatível com upcast por ponteiro).
+** Simples: apenas uma extends.
 
-Override automático: métodos public/protected da base com mesma assinatura na derivada sobrescrevem na vtable.
+** Layout: base é o primeiro campo da classe derivada (compatível com upcast por ponteiro).
 
-6. Membros
-De instância: armazenados em cada objeto.
+** Override automático: métodos public/protected da base com mesma assinatura na derivada sobrescrevem na vtable.
 
-De classe (static): armazenados globalmente, não no struct.
+* Membros
 
-Métodos:
+** De instância: armazenados em cada objeto.
 
-Normais → chamadas diretas no C.
+** De classe (static): armazenados globalmente, não na instância da classe.
 
-Virtuais → ponteiros na vtable.
+* Métodos:
 
-Por simplicidade, padrão é virtual.
+** Normais → chamadas diretas no C.
 
-Sobrecarga:
+** Virtuais → ponteiros na vtable.
 
-Permitida apenas por número de parâmetros.
+** Por simplicidade, padrão é virtual.
 
-Interfaces não podem ter sobrecarga.
+* Sobrecarga:
 
-Gerado no C como _Generic + métodos renomeados (__1, __2, etc.).
+Em estudo
 
-7. Criação e destruição
-Heap:
-cplus
-Copiar
-Editar
+# Criação e destruição de objetos
+
+**Heap:**
+
+```C++
 Motor *m = new(Motor, 5000);
 del(m);
-Gera:
+```
 
+**Gera:**
+
+```C++
 Motor *cplus_new(ClassMeta *meta, ...)
 
 void cplus_del(void *obj)
+```
 
-Stack:
-cplus
-Copiar
-Editar
+
+**Stack:**
+
+```C++
 Motor m;
 init(&m, 5000);
 deinit(&m);
-8. Inicialização
+```
+
+# Inicialização
+
 Dois níveis:
 
-sys_init() / sys_deinit() → gerados pelo transpiler (seta vtables, overrides, meta).
+`sys_init()` / `sys_deinit()` → gerados pelo transpiler (seta vtables, overrides, meta).
 
-init() / deinit() → definidos pelo usuário, chamam sys_* automaticamente no prólogo/epílogo.
+`init() / deinit()` → definidos pelo usuário, chamam sys_* automaticamente no prólogo/epílogo.
 
-9. RTTI & Meta
+# RTTI & Meta
 Cada classe gera um objeto ClassMeta:
 
-c
-Copiar
-Editar
+```C++
 typedef struct {
     const char *name;
     size_t size;
     const ClassMeta *base;
     // vtables por interface e classe
 } ClassMeta;
-Usado por cplus_new() e para casts seguros (as).
+```
+
+Usado por `cplus_new()` e para casts seguros (`as`).
 
 Transpiler injeta meta nas instâncias no campo Class.
 
-10. Casts
+# Casts
+
 Classe → interface:
 
-cplus
-Copiar
-Editar
+```C++
 IStartable *ist = m as IStartable;
+```
+
 Classe derivada → base:
 
-cplus
-Copiar
-Editar
+```C++
 Device *d = m as Device;
+```
+
 Checagem no transpiler; C gerado faz cast simples.
 
-11. Arquivos e separação
-.h → struct + declarações de métodos.
+# Arquivos e separação
 
-.cp → implementações.
+`.h` → `class` + declarações de métodos.
+
+`.cp` → implementações.
 
 Permite composição de vários arquivos no padrão C.
 
-12. Geração de código C
+# Geração de código C
+
 Todas as visibilidades viram struct pública no C.
 
 Encapsulamento é garantido pelo transpiler, não em runtime.
 
 Métodos virtuais → ponteiros na vtable.
 
-#line usado para mapear erros/warnings ao .cplus.
+`#line` usado para mapear _erros/warnings_ ao `.cplus`.
 
-Ida: linha real no .cplus.
+Ida: linha real no `.cplus`.
 
 Volta: #line 1 "Classe.gen.c".
 
-13. Convenções
-Nome gerado no C:
+# Convenções
 
-Classe_metodo para normais.
+**Nome gerado no C:**
 
-Classe__sys_init, Classe__sys_deinit gerados.
+`Class_metodo` para normais.
 
-Métodos sobrecarregados → Classe_metodo__1, __2 etc.
+`Class__sys_init`, `Class__sys_deinit` gerados.
 
 Métodos virtuais na vtable com assinatura fixa para a classe.

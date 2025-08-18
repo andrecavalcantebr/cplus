@@ -51,6 +51,7 @@ static char *slurp(const char *path, size_t *out_len)
  * Also collapses whitespace runs (outside literals) to a single space.
  * Returns a newly malloc'ed buffer that the caller must free.
  */
+/*
 static char *strip_comments_and_collapse(const char *src)
 {
     enum
@@ -73,7 +74,7 @@ static char *strip_comments_and_collapse(const char *src)
     {
         char c = *p;
 
-        /* Helpers for escapes inside literals */
+        // Helpers for escapes inside literals
         int is_escape = 0;
         if (st == S_DQ || st == S_SQ || st == S_REGEX)
         {
@@ -84,7 +85,7 @@ static char *strip_comments_and_collapse(const char *src)
                 backslashes++;
                 q--;
             }
-            is_escape = (backslashes % 2) == 1; /* odd number of preceding backslashes */
+            is_escape = (backslashes % 2) == 1; // odd number of preceding backslashes
         }
 
         switch (st)
@@ -104,7 +105,7 @@ static char *strip_comments_and_collapse(const char *src)
                 continue;
             }
 
-            /* entering literals */
+            // entering literals
             if (c == '"')
             {
                 st = S_DQ;
@@ -123,12 +124,12 @@ static char *strip_comments_and_collapse(const char *src)
             }
             if (c == '/')
             {
-                /* Heuristic: MPC regex literals always start with '/', and when it's
-                   a regex, the next non-escaped '/' closes it. We consider '/' as
-                   starting a regex unless it looks like division (identifier/number before).
-                 */
-                /* lookbehind: if previous non-space is alnum or ')' or '>' etc, it *might* be division.
-                   Para a gramática MPC, quase sempre aqui é REGEX; então trate como REGEX. */
+                // Heuristic: MPC regex literals always start with '/', and when it's
+                // a regex, the next non-escaped '/' closes it. We consider '/' as
+                // starting a regex unless it looks like division (identifier/number before).
+
+                // lookbehind: if previous non-space is alnum or ')' or '>' etc, it *might* be division.
+                // Para a gramática MPC, quase sempre aqui é REGEX; então trate como REGEX.
                 st = S_REGEX;
                 out[w++] = c;
                 p++;
@@ -136,7 +137,7 @@ static char *strip_comments_and_collapse(const char *src)
                 continue;
             }
 
-            /* collapse whitespace outside literals */
+            // collapse whitespace outside literals
             if (c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\v' || c == '\f')
             {
                 if (!prev_was_space)
@@ -148,7 +149,7 @@ static char *strip_comments_and_collapse(const char *src)
                 continue;
             }
 
-            /* normal char */
+            // normal char
             out[w++] = c;
             p++;
             prev_was_space = 0;
@@ -156,7 +157,7 @@ static char *strip_comments_and_collapse(const char *src)
 
         case S_LINE:
             if (c == '\n')
-            { /* end of line comment -> emit single space to separate tokens */
+            { // end of line comment -> emit single space to separate tokens
                 if (!prev_was_space)
                 {
                     out[w++] = ' ';
@@ -177,7 +178,7 @@ static char *strip_comments_and_collapse(const char *src)
                 p++;
             break;
 
-        case S_DQ: /* double-quoted string */
+        case S_DQ: // double-quoted string
             out[w++] = c;
             p++;
             if (!is_escape && c == '"')
@@ -187,7 +188,7 @@ static char *strip_comments_and_collapse(const char *src)
             prev_was_space = 0;
             break;
 
-        case S_SQ: /* single-quoted char */
+        case S_SQ: // single-quoted char
             out[w++] = c;
             p++;
             if (!is_escape && c == '\'')
@@ -197,7 +198,7 @@ static char *strip_comments_and_collapse(const char *src)
             prev_was_space = 0;
             break;
 
-        case S_REGEX: /* /.../ regex literal */
+        case S_REGEX: // /.../ regex literal
             out[w++] = c;
             p++;
             if (!is_escape && c == '/')
@@ -209,12 +210,13 @@ static char *strip_comments_and_collapse(const char *src)
         }
     }
 
-    /* trim espaço final */
+    // trim espaço final
     while (w > 0 && out[w - 1] == ' ')
         w--;
     out[w] = '\0';
     return out;
 }
+*/
 
 /* =========================================================================
  * util: normalizar nome para identificador C seguro
@@ -281,38 +283,53 @@ static void push(name_list *L, const char *name)
     L->names[L->n++] = strdup(name);
 }
 
-/* regra por linha: [ws] IDENT [ws] ':' */
+/* skip espaços, quebras e comentários C/C++ */
+static const char *skip_ws_comments(const char *p)
+{
+    for (;;)
+    {
+        while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n')
+            p++;
+        if (p[0] == '/' && p[1] == '/')
+        {
+            p += 2;
+            while (*p && *p != '\n')
+                p++;
+            continue;
+        }
+        if (p[0] == '/' && p[1] == '*')
+        {
+            p += 2;
+            while (*p && !(p[0] == '*' && p[1] == '/'))
+                p++;
+            if (*p)
+                p += 2;
+            continue;
+        }
+        break;
+    }
+    return p;
+}
+
+/* regra por bloco: IDENT seguido de ':' (pode haver \n/comentários no meio) */
 static void collect_nonterminals(const char *text, name_list *out)
 {
     const char *p = text;
-
     while (*p)
     {
-        while (*p == ' ' || *p == '\t' || *p == '\r')
-        {
-            p++;
-        }
-        if (*p == '\n')
-        {
-            p++;
-            continue;
-        }
+        /* pula ws/comentários até algo “interessante” */
+        p = skip_ws_comments(p);
 
+        /* tenta ler um identificador de regra */
         const char *q = p;
-
         if (isalpha((unsigned char)*q) || *q == '_')
         {
             q++;
             while (isalnum((unsigned char)*q) || *q == '_')
-            {
                 q++;
-            }
 
-            const char *r = q;
-            while (*r == ' ' || *r == '\t')
-            {
-                r++;
-            }
+            /* depois do nome, permita ws/comentários e quebras de linha */
+            const char *r = skip_ws_comments(q);
 
             if (*r == ':')
             {
@@ -322,17 +339,15 @@ static void collect_nonterminals(const char *text, name_list *out)
                 name[len] = '\0';
                 push(out, name);
                 free(name);
+                /* avança pelo ':' para evitar reprocessar a mesma regra */
+                p = r + 1;
+                continue;
             }
         }
 
-        while (*p && *p != '\n')
-        {
+        /* senão, avance um caractere para continuar procurando */
+        if (*p)
             p++;
-        }
-        if (*p == '\n')
-        {
-            p++;
-        }
     }
 }
 
@@ -415,9 +430,6 @@ static void emit_grammar_literal(const char *grammar_text)
 static void generate_c(const char *grammar_path, char *raw_text, name_list *L)
 {
     (void)grammar_path;
-
-    /* ----- pré-processar gramática: tirar comentários ----- */
-    strip_comments_and_collapse(raw_text);
 
     /* ----- Bloco: Cabeçalho do arquivo gerado ----- */
     printf(
@@ -507,22 +519,57 @@ static void generate_c(const char *grammar_path, char *raw_text, name_list *L)
         "}\n"
         "\n");
 
-    /* ----- Bloco: escolha da regra inicial (program se existir) ----- */
+    /* ----- Start rule: prefira translation_unit, senão program, senão a 1ª ----- */
+    int ix_tu = find_index(L, "translation_unit");
     int ix_program = find_index(L, "program");
-    const char *start_rule = (ix_program >= 0) ? "program" : L->names[0];
+    const char *start_rule =
+        (ix_tu >= 0) ? "translation_unit" : (ix_program >= 0) ? "program"
+                                                              : L->names[0];
+
     char *start_cname = c_ident_from_rule(start_rule);
 
-    /* ----- Bloco: função main do parser gerado ----- */
+    /* ----- Bloco: função main do parser gerado (simplificado: -f arquivo | -x "codigo") ----- */
     printf(
         "int main(int argc, char **argv) {\n"
-        "  if (argc < 2) {\n"
-        "    fprintf(stderr, \"Uso: %%s <arquivo_para_parsear>\\n\", argv[0]);\n"
+        "  if (strcmp(argv[1], \"-G\") == 0) {\n"
+        "       puts(\" ===== GRAMMAR BEGIN ===== \");\n"
+        "       puts(GRAMMAR);\n"
+        "       puts(\" ===== GRAMMAR END ===== \");\n"
+        "       return 0;\n"
+        "  }\n"
+        "  \n"
+        "  if (argc < 3) {\n"
+        "    fprintf(stderr,\n"
+        "      \"Uso:\\n\"\n"
+        "      \"  %%s -G \\n\"\n"
+        "      \"  %%s -f <arquivo>\\n\"\n"
+        "      \"  %%s -x \\\"<codigo C>\\\"\\n\"\n"
+        "      \"Ex.:\\n\"\n"
+        "      \"  %%s -G \\n\"\n"
+        "      \"  %%s -f tests/01_class_basic.cplus.h\\n\"\n"
+        "      \"  %%s -x \\\"int f(void);\\\"\\n\",\n"
+        "      argv[0], argv[0], argv[0], argv[0], argv[0], argv[0]);\n"
         "    return 1;\n"
         "  }\n"
         "\n"
-        "  char *input_text = slurp(argv[1]);\n"
-        "  if (!input_text) {\n"
-        "    fprintf(stderr, \"Erro ao ler arquivo de entrada: %%s\\n\", argv[1]);\n"
+        "  const char *mode = argv[1];\n"
+        "  char *input_text = NULL;\n"
+        "\n"
+        "  if (strcmp(mode, \"-f\") == 0) {\n"
+        "    input_text = slurp(argv[2]);\n"
+        "    if (!input_text) {\n"
+        "      fprintf(stderr, \"Erro ao ler arquivo: %%s\\n\", argv[2]);\n"
+        "      return 1;\n"
+        "    }\n"
+        "  } else if (strcmp(mode, \"-x\") == 0) {\n"
+        "    /* Código vem como um único argumento já entre aspas na shell */\n"
+        "    input_text = strdup(argv[2]);\n"
+        "    if (!input_text) {\n"
+        "      fprintf(stderr, \"Sem memória para -x\\n\");\n"
+        "      return 1;\n"
+        "    }\n"
+        "  } else {\n"
+        "    fprintf(stderr, \"Parâmetro inválido: %%s\\n\", mode);\n"
         "    return 1;\n"
         "  }\n"
         "\n"
@@ -550,15 +597,28 @@ static void generate_c(const char *grammar_path, char *raw_text, name_list *L)
         "    return 2;\n"
         "  }\n"
         "\n"
-        "  mpc_result_t r;\n");
-
-    /* Aqui interpolamos o símbolo inicial agora (printf real com %s) */
-    printf(
-        "  if (mpc_parse(\"%s\", input_text, %s, &r)) {\n",
-        start_cname, start_cname);
-    printf(
-        "    print_program(r.output);\n"
-        "    mpc_ast_delete(r.output);\n"
+        "  mpc_result_t r; int ok = 0;\n"
+        "\n"
+        "  if (strcmp(mode, \"-f\") == 0) {\n"
+        "    ok = mpc_parse(\"<file>\", input_text, %s, &r);\n"
+        "  } else { /* -x */\n"
+        "    /* Tenta TU primeiro; depois formas úteis para snippet curto */\n"
+        "    ok = mpc_parse(\"<snippet-tu>\",   input_text, %s, &r);\n"
+        "    if (!ok) ok = mpc_parse(\"<snippet-ext>\",  input_text, external_decl, &r);\n"
+        "    if (!ok) ok = mpc_parse(\"<snippet-var>\",  input_text, var_decl,      &r);\n"
+        "    if (!ok) ok = mpc_parse(\"<snippet-stmt>\", input_text, stmt,          &r);\n"
+        "    if (!ok) ok = mpc_parse(\"<snippet-expr>\", input_text, expr,          &r);\n"
+        "  }\n"
+        "\n"
+        "  if (ok) {\n"
+        "    mpc_ast_t *ast = (mpc_ast_t*)r.output;"
+        "    fprintf(stderr, \"[debug] raiz: %%s\\n\", ast ? ast->tag : \"<null>\");\n"
+        "    puts(\"===== RAW AST =====\");\n"
+        "    mpc_ast_print(ast);\n"
+        "    puts(\"===== /RAW AST =====\");\n"
+        "    /* Pretty-printer específico (pode imprimir NULL se esperar 'program') */\n"
+        "    print_program(ast);\n"
+        "    mpc_ast_delete(ast);\n"
         "  } else {\n"
         "    mpc_err_print(r.error);\n"
         "    mpc_err_delete(r.error);\n"
@@ -570,7 +630,10 @@ static void generate_c(const char *grammar_path, char *raw_text, name_list *L)
         "  free(input_text);\n"
         "  cleanup_parsers();\n"
         "  return 0;\n"
-        "}\n");
+        "}\n",
+        start_cname, /* start p/ arquivo (-f) */
+        start_cname  /* start p/ snippet (-x)  */
+    );
 
     free(start_cname);
 }
@@ -587,12 +650,17 @@ int main(int argc, char **argv)
     }
 
     size_t n = 0;
-    char *text = slurp(argv[1], &n);
-    if (!text)
+    char *raw_text = slurp(argv[1], &n);
+    if (!raw_text)
     {
         fprintf(stderr, "Erro ao ler arquivo: %s\n", argv[1]);
         return 1;
     }
+
+    /* ----- pré-processar gramática: tirar comentários ----- */
+    // char *text = strip_comments_and_collapse(raw_text);
+    // free(raw_text);
+    char *text = raw_text;
 
     /* Não strip aqui para coleta de LHS? Fazemos strip
        depois, dentro do generate_c, antes de embutir literal. */

@@ -1,0 +1,75 @@
+identifier : /[A-Za-z_][A-Za-z0-9_]*/ ;
+number     : /0|[1-9][0-9]*/ ;
+string     : /"(\\.|[^"\\])*"/ ;
+charlit    : /'([^'\\]|\\.)*'/ ;
+
+ws : /([[:space:]]|\/\/[^\n]*|\/\*([^*]|\*+[^*\/])*\*+\/)*/ ;
+
+qualifier : "const" | "volatile" | "restrict" | "_Atomic"
+          | "signed" | "unsigned" | "short" | "long"
+          | "public" | "protected" | "private" ;
+
+pointer : "*" <pointer>? ;
+
+taggedtype_use : ("struct" | "class" | "interface" | "union" | "enum") <identifier> ;
+
+type : <qualifier>* ( <taggedtype_use> | <identifier> ) <pointer>* ;
+
+array_suffix : "[" <number>? "]" ;
+declarator   : <pointer>* <identifier> <array_suffix>* ;
+
+constant        : <number> | <charlit> | <string> ;
+init_declarator : <declarator> ("=" <constant>)? ;
+var_decl        : <type> <init_declarator> ("," <init_declarator>)* ";" ;
+
+param_declarator : <declarator> ;
+param            : <type> <param_declarator>? ;
+param_list       : <param> ("," <param>)* | "void" ;
+func_prototype   : <type> <identifier> "(" <param_list>? ")" ";" ;
+
+function_def : <type> <identifier> "(" <param_list>? ")" <compound_stmt> ;
+
+member_decl : <var_decl> | <func_prototype> ;
+
+struct_def
+  : ("struct" | "class" | "interface") <identifier>? "{" <member_decl>* "}" ";" ;
+
+primary        : <number> | <string> | <charlit> | <identifier> | "(" <expr> ")" ;
+call           : <identifier> "(" (<expr> ("," <expr>)*)? ")" ;
+unary          : ("+" | "-" | "!" | "&" | "*") <unary> | <call> | <primary> ;
+mul            : <unary> (("*" | "/") <unary>)* ;
+add            : <mul>   (("+" | "-") <mul>)* ;
+rel            : <add>   (("<" | ">" | "<=" | ">=") <add>)* ;
+eq             : <rel>   (("==" | "!=") <rel>)* ;
+land           : <eq>    ("&&" <eq>)* ;
+lor            : <land>  ("||" <land>)* ;
+assign         : <lor>   (("=" | "+=" | "-=" | "*=" | "/=") <assign>)? ;
+expr           : <assign> ;
+
+expr_stmt      : <expr>? ";" ;
+return_stmt    : "return" <expr>? ";" ;
+if_stmt        : "if" "(" <expr> ")" <stmt> ("else" <stmt>)? ;
+while_stmt     : "while" "(" <expr> ")" <stmt> ;
+for_stmt       : "for" "(" <expr>? ";" <expr>? ";" <expr>? ")" <stmt> ;
+compound_stmt  : "{" <stmt>* "}" ;
+
+stmt
+  : <var_decl>
+  | <return_stmt>
+  | <if_stmt>
+  | <while_stmt>
+  | <for_stmt>
+  | <compound_stmt>
+  | <expr_stmt>
+  ;
+
+external_decl
+  : <function_def>
+  | <struct_def>
+  | <func_prototype>
+  | <var_decl>
+  ;
+
+translation_unit : <external_decl>* ;
+
+c_grammar : <translation_unit> ;

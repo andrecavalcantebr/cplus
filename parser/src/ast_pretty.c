@@ -411,9 +411,11 @@ void print_program(const mpc_ast_t *root)
 
     puts("Program");
     bool printed_any = false;
+
     for (int i = 0; i < prog->children_num; i++)
     {
         const mpc_ast_t *c = prog->children[i];
+
         if (has_tag(c, "interface"))
         {
             print_interface(c, 1);
@@ -434,13 +436,8 @@ void print_program(const mpc_ast_t *root)
             print_member(c, 1);
             printed_any = true;
         }
-    }
-    /* Fallback: if nothing printed (unexpected AST shape), look one level down */
-    if (!printed_any)
-    {
-        for (int i = 0; i < prog->children_num; i++)
+        else
         {
-            const mpc_ast_t *c = prog->children[i];
             const mpc_ast_t *itf = first_child_tag(c, "interface");
             const mpc_ast_t *cls = first_child_tag(c, "class");
             if (itf)
@@ -454,5 +451,11 @@ void print_program(const mpc_ast_t *root)
                 printed_any = true;
             }
         }
+    }
+
+    if (!printed_any)
+    {
+        /* Fallback: imprime a AST crua para entendermos a estrutura exata */
+        mpc_ast_print((mpc_ast_t *)prog);
     }
 }

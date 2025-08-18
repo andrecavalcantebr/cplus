@@ -1,40 +1,31 @@
-bom           : /\xEF\xBB\xBF/ ;
-ws            : /([[:space:]]|\/\/[^\n]*|\/\*([^*]|\*+[^*\/])*\*+\/)*/ ;
-letter        : /[A-Za-z_]/ ;
-alnum         : /[A-Za-z0-9_]/ ;
-identifier    : <letter> <alnum>* ;
-kw_interface  : "interface" ;
-kw_class      : "class" ;
-kw_public     : "public" ;
-kw_private    : "private" ;
-kw_protected  : "protected" ;
-type_name     : <identifier> ;
-type          : <type_name> ;
-lbrace        : "{" ;
-rbrace        : "}" ;
-lparen        : "(" ;
-rparen        : ")" ;
-semi          : ";" ;
-comma         : "," ;
-colon         : ":" ;
-param         : <type> <identifier> ;
-param_list    : <param> ( <comma> <param> )* ;
-params        : <lparen> ( <param_list> )? <rparen> ;
-method_name   : <identifier> ;
-method_decl   : <type> <method_name> <params> <semi> ;
-field_decl    : <type> <identifier> <semi> ;
-member        : <method_decl> | <field_decl> ;
-access_kw     : <kw_public> | <kw_private> | <kw_protected> ;
-section       : <access_kw> <colon>
-                <ws>
-                ( <member> <ws> )*
-              ;
-interface     : <kw_interface> <ws> <identifier> <ws> <lbrace> <ws>
-                ( <method_decl> <ws> )*
-                <rbrace> <ws> <semi> ;
-class         : <kw_class> <ws> <identifier> <ws> <lbrace> <ws>
-                ( <section> <ws>
-                | <member>  <ws>    /* allow members outside sections */
-                )*
-                <rbrace> <ws> <semi> ;
-program       : <ws> ( <bom> <ws> )? ( <interface> | <class> )+ <ws> ;
+ws                  : /(\xEF\xBB\xBF)?([[:space:]]|\/\/[^\n]*|\/\*([^*]|\*+[^*\/])*\*+\/)*/ ;
+letter              : /[A-Za-z_]/ ;
+alnum               : /[A-Za-z0-9_]/ ;
+identifier          : <letter> <alnum>* ;
+kw_interface        : "interface" ;
+kw_class            : "class" ;
+kw_public           : "public" ;
+kw_private          : "private" ;
+kw_protected        : "protected" ;
+lbrace              : "{" ;
+rbrace              : "}" ;
+lparen              : "(" ;
+rparen              : ")" ;
+comma               : "," ;
+semi                : ";" ;
+star                : "*" ;
+colon               : ":" ;
+type_name           : <identifier> (<ws> <star>)* ;
+param               : <type_name> <ws> <identifier> ;
+param_list          : <param> (<ws> <comma> <ws> <param>)* ;
+method_decl_simple  : <type_name> <ws> <identifier> <ws>? <lparen> <ws> <param_list>? <ws> <rparen> <ws> <semi> ;
+method_decl_ptr     : <type_name> <ws> <lparen> <ws> <star>+ <ws> <identifier> <ws> <rparen> <ws> <lparen> <ws> <param_list>? <ws> <rparen> <ws> <semi> ;
+method_decl         : <method_decl_simple> | <method_decl_ptr> ;
+field_decl          : <type_name> <ws> <identifier> <ws> <semi> ;
+access_kw           : <kw_public> | <kw_private> | <kw_protected> ;
+section             : <access_kw> <ws> <colon> <ws> (<member> <ws>)* ;
+member              : <field_decl> | <method_decl> | <section> ;
+interface           : <kw_interface> <ws> <identifier> <ws> <lbrace> <ws> (<method_decl> <ws>)* <rbrace> <ws> <semi> ;
+class               : <kw_class> <ws> <identifier> <ws> <lbrace> <ws> (<section> <ws> | <member> <ws> )* <rbrace> <ws> <semi> ;
+decl                : <class> | <interface> ;
+program             : <ws> <decl>+ <ws> ;
