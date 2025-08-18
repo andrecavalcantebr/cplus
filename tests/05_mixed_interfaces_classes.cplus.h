@@ -7,8 +7,7 @@ interface IAdd {
 };
 
 class Accumulator {
-    public:
-        int value;
-        void reset();
-        int add(int v);
+    int value;
+    void reset();
+    int add(int v);
 };
