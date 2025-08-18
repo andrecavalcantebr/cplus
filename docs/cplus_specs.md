@@ -88,39 +88,50 @@ auto c = obj as IClone
 
 * Visibilidade
 
-public → acessível por qualquer código.
+  * `public` → acessível por qualquer código.
 
-protected → acessível pela própria classe e subclasses.
+  * `protected` → acessível pela própria classe e subclasses.
 
-private → acessível apenas pela própria classe.
+  * `private` → acessível apenas pela própria classe.
 
-* Interfaces → apenas public.
+* Interfaces 
+
+  * apenas `public`.
+
+  * duas interfaces com o mesmo nome de método devem ter a mesma assinatura completa
+
+  * uma classe que implementa duas interfaces com o mesmo nome deve implementar somente um código
+
+  * apenas uma entrada na vtable
+
+  * uma vtable por classe
 
 * Herança
 
-** Simples: apenas uma extends.
+  * Simples: apenas uma extends.
 
-** Layout: base é o primeiro campo da classe derivada (compatível com upcast por ponteiro).
+  * Layout: base é o primeiro campo da classe derivada (compatível com upcast por ponteiro).
 
-** Override automático: métodos public/protected da base com mesma assinatura na derivada sobrescrevem na vtable.
+  * Override automático: métodos public/protected da base com mesma assinatura na derivada sobrescrevem na vtable.
 
 * Membros
 
-** De instância: armazenados em cada objeto.
+  * De instância: armazenados em cada objeto.
 
-** De classe (static): armazenados globalmente, não na instância da classe.
+  * De classe (static): armazenados globalmente, não na instância da classe.
 
 * Métodos:
 
-** Normais → chamadas diretas no C.
+  * Normais → chamadas diretas no C.
 
-** Virtuais → ponteiros na vtable.
+  * Virtuais → ponteiros na vtable.
 
-** Por simplicidade, padrão é virtual.
+  * Por simplicidade, padrão é virtual.
 
 * Sobrecarga:
 
 Em estudo
+
 
 # Criação e destruição de objetos
 
