@@ -1,47 +1,43 @@
-# Especificação Resumida do Cplus
+# Cplus Summary Specification
 
-## Objetivo
-Extensão mínima de C23 para permitir programação orientada a objetos.
+## Objective
+Minimal extension of C23 to enable object-oriented programming.  
 
-Transpila para C puro legível e compilável por qualquer compilador C23.
+Transpiles to pure C that is readable and compilable by any C23 compiler.  
 
-Prioriza composição e agregação sobre herança.
+Prioritizes composition and aggregation over inheritance.  
 
-Herança simples (apenas uma base) + interfaces múltiplas.
+Single inheritance (only one base) + multiple interfaces.  
 
-Encapsulamento gerido no transpiler — código C gerado expõe tudo, mas regras são checadas no Cplus.
+Encapsulation is enforced at the transpiler level — the generated C code exposes everything, but rules are checked in Cplus.  
 
-## Palavras reservadas
+## Reserved Keywords
 
 ### class
-Define uma classe. Não mexe com a definição de struct padrão do C. Para você fazer uma classe em Cplus
-você usa `class` e não `struct`
+Defines a class. Does not interfere with the standard C `struct`. To declare a class in Cplus you use `class` and not `struct`.  
 
-**Sintaxe básica:**
-
-```Java 
+**Basic syntax:**
+```java
 class Foo {
     // members declaration
 }
 ```
 
 ### interface
-Define uma interface. Uma `interface` só tem métodos públicos, portanto não admitem outros modificadores
+Defines an interface. An `interface` only has public methods, therefore it does not allow other modifiers.  
 
-**Sintaxe básica:**
-
-```Java 
+**Basic syntax:**
+```java
 interface IFoo {
     // methods declaration
 }
 ```
 
 ### public, protected, private
-Modificadores de acesso dos membros
+Access modifiers for members.  
 
-**Sintaxe básica:**
-
-```C++ 
+**Basic syntax:**
+```cpp
 class Foo {
     public int f1(Foo *self);
     protected char *getStr(Foo *self);
@@ -50,183 +46,163 @@ class Foo {
 ```
 
 ### extends
-Usado para definir a classe base no caso de herança em uma classe
+Used to define the base class in case of inheritance.  
 
-**Sintaxe básica:**
-```Java
+**Basic syntax:**
+```java
 class Foo extends Bar {
     // members declaration
 }
 ```
 
 ### implements
-Usado para definir o conjunto de interfaces implementadas em uma classe
+Used to define the set of interfaces implemented by a class.  
 
-**Sintaxe básica:**
-
-```Java
+**Basic syntax:**
+```java
 class Foo implements IClone, IBar {
     // members declaration
 }
 ```
 
 ### as
-Usado para _cast_ estático
+Used for static _casting_.  
 
-**Sintaxe básica:**
-
-```Java
-auto c = obj as IClone
+**Basic syntax:**
+```java
+auto c = obj as IClone;
 ```
 
 ### new, del
+Keywords for allocation and deallocation.  
 
+---
 
-# Regras
+# Rules
 
-* Classe que implementa interface deve fornecer todas as implementações.
+* A class that implements an interface must provide all implementations.  
 
-* Visibilidade
+* Visibility:  
+  * `public` → accessible by any code.  
+  * `protected` → accessible by the class itself and its subclasses.  
+  * `private` → accessible only by the class itself.  
 
-  * `public` → acessível por qualquer código.
+* Interfaces:  
+  * only `public`.  
+  * two interfaces with the same method name must have identical full signatures.  
+  * a class implementing two interfaces with the same method only needs to provide one implementation.  
+  * only one entry in the vtable.  
+  * one vtable per class.  
 
-  * `protected` → acessível pela própria classe e subclasses.
+* Inheritance:  
+  * Single inheritance only: one `extends`.  
+  * Layout: base is the first field of the derived class (compatible with upcast by pointer).  
+  * Automatic override: base `public/protected` methods with the same signature in the derived class overwrite in the vtable.  
 
-  * `private` → acessível apenas pela própria classe.
+* Members:  
+  * Instance members: stored in each object.  
+  * Class members (`static`): stored globally, not in the class instance.  
 
-* Interfaces 
+* Methods:  
+  * Normal → direct C calls.  
+  * Virtual → vtable function pointers.  
+  * By default, methods are virtual (for simplicity).  
 
-  * apenas `public`.
+* Overloading:  
+  * Still under evaluation.  
 
-  * duas interfaces com o mesmo nome de método devem ter a mesma assinatura completa
+---
 
-  * uma classe que implementa duas interfaces com o mesmo nome deve implementar somente um código
-
-  * apenas uma entrada na vtable
-
-  * uma vtable por classe
-
-* Herança
-
-  * Simples: apenas uma extends.
-
-  * Layout: base é o primeiro campo da classe derivada (compatível com upcast por ponteiro).
-
-  * Override automático: métodos public/protected da base com mesma assinatura na derivada sobrescrevem na vtable.
-
-* Membros
-
-  * De instância: armazenados em cada objeto.
-
-  * De classe (static): armazenados globalmente, não na instância da classe.
-
-* Métodos:
-
-  * Normais → chamadas diretas no C.
-
-  * Virtuais → ponteiros na vtable.
-
-  * Por simplicidade, padrão é virtual.
-
-* Sobrecarga:
-
-Em estudo
-
-
-# Criação e destruição de objetos
+# Object Creation and Destruction
 
 **Heap:**
-
-```C++
+```cpp
 Motor *m = new(Motor, 5000);
 del(m);
 ```
 
-**Gera:**
+**Generates:**
+```cpp
+Motor *cplus_new(ClassMeta *meta, ...);
 
-```C++
-Motor *cplus_new(ClassMeta *meta, ...)
-
-void cplus_del(void *obj)
+void cplus_del(void *obj);
 ```
 
-
 **Stack:**
-
-```C++
+```cpp
 Motor m;
 init(&m, 5000);
 deinit(&m);
 ```
 
-# Inicialização
+---
 
-Dois níveis:
+# Initialization
 
-`sys_init()` / `sys_deinit()` → gerados pelo transpiler (seta vtables, overrides, meta).
+Two levels:
 
-`init() / deinit()` → definidos pelo usuário, chamam sys_* automaticamente no prólogo/epílogo.
+* `sys_init()` / `sys_deinit()` → generated by the transpiler (sets vtables, overrides, meta).  
+* `init()` / `deinit()` → user-defined, automatically call sys_* in prologue/epilogue.  
+
+---
 
 # RTTI & Meta
-Cada classe gera um objeto ClassMeta:
 
-```C++
+Each class generates a `ClassMeta` object:  
+
+```cpp
 typedef struct {
     const char *name;
     size_t size;
     const ClassMeta *base;
-    // vtables por interface e classe
+    // vtables per interface and class
 } ClassMeta;
 ```
 
-Usado por `cplus_new()` e para casts seguros (`as`).
+Used by `cplus_new()` and safe casts (`as`).  
+The transpiler injects meta information into instances in the `Class` field.  
 
-Transpiler injeta meta nas instâncias no campo Class.
+---
 
 # Casts
 
-Classe → interface:
-
-```C++
+Class → interface:
+```cpp
 IStartable *ist = m as IStartable;
 ```
 
-Classe derivada → base:
-
-```C++
+Derived class → base:
+```cpp
 Device *d = m as Device;
 ```
 
-Checagem no transpiler; C gerado faz cast simples.
+Checked by the transpiler; generated C just performs a simple cast.  
 
-# Arquivos e separação
+---
 
-`.h` → `class` + declarações de métodos.
+# Files and Separation
 
-`.cp` → implementações.
+* `.h` → `class` + method declarations.  
+* `.cp` → implementations.  
 
-Permite composição de vários arquivos no padrão C.
+Allows composition of multiple files following standard C practices.  
 
-# Geração de código C
+---
 
-Todas as visibilidades viram struct pública no C.
+# C Code Generation
 
-Encapsulamento é garantido pelo transpiler, não em runtime.
+* All visibilities become public structs in C.  
+* Encapsulation is guaranteed by the transpiler, not at runtime.  
+* Virtual methods → vtable function pointers.  
+* `#line` used to map _errors/warnings_ to `.cplus` sources.  
+  * Forward: real line in `.cplus`.  
+  * Backward: `#line 1 "Class.gen.c"`.  
 
-Métodos virtuais → ponteiros na vtable.
+---
 
-`#line` usado para mapear _erros/warnings_ ao `.cplus`.
+# Conventions
 
-Ida: linha real no `.cplus`.
-
-Volta: #line 1 "Classe.gen.c".
-
-# Convenções
-
-**Nome gerado no C:**
-
-`Class_metodo` para normais.
-
-`Class__sys_init`, `Class__sys_deinit` gerados.
-
-Métodos virtuais na vtable com assinatura fixa para a classe.
+**Generated C naming:**  
+* `Class_method` for normal methods.  
+* `Class__sys_init`, `Class__sys_deinit` are generated automatically.  
+* Virtual methods in the vtable use fixed signatures for the class.  
