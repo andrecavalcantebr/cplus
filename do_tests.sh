@@ -2,6 +2,6 @@
 
 for f in ./tests/*.cplus.h; do
   echo "==== $f ===="
-  ./parser/parser "$f"
+  ./parser/parser -f "$f"
   echo
  done

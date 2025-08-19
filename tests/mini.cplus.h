@@ -3,5 +3,5 @@ interface X {
 };
 
 class Y { 
-    public: void b(); 
+    public void b(); 
 };

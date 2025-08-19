@@ -447,7 +447,7 @@ static void emit_parser_program(FILE *out, const char *grammar_src, size_t gramm
         "    mpc_result_t r;\n"
         "    if (mpc_parse(input_name, source, program, &r)) {\n"
         "        puts(\"== PARSE SUCCESS ==\");\n"
-        "        print_program(r.output);\n"
+        "        // print_program(r.output);\n"
         "        mpc_ast_print(r.output);\n"
         "        mpc_ast_delete(r.output);\n"
         "        return 0;\n"

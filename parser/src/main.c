@@ -18,83 +18,103 @@
 #include "ast.h"
 
 /* ============== Utility: read entire file ============== */
-static char *slurp(const char *path, size_t *out_len) {
+static char *slurp(const char *path, size_t *out_len)
+{
     FILE *f = fopen(path, "rb");
-    if (!f) { fprintf(stderr, "Error opening file: %s (%s)\n", path, strerror(errno)); return NULL; }
-    if (fseek(f, 0, SEEK_END) != 0) { fprintf(stderr, "Error seeking file: %s\n", path); fclose(f); return NULL; }
+    if (!f)
+    {
+        fprintf(stderr, "Error opening file: %s (%s)\n", path, strerror(errno));
+        return NULL;
+    }
+    if (fseek(f, 0, SEEK_END) != 0)
+    {
+        fprintf(stderr, "Error seeking file: %s\n", path);
+        fclose(f);
+        return NULL;
+    }
     long n = ftell(f);
-    if (n < 0) { fprintf(stderr, "Error telling file size: %s\n", path); fclose(f); return NULL; }
+    if (n < 0)
+    {
+        fprintf(stderr, "Error telling file size: %s\n", path);
+        fclose(f);
+        return NULL;
+    }
     rewind(f);
     char *buf = (char *)malloc((size_t)n + 1);
-    if (!buf) { fprintf(stderr, "Out of memory reading: %s\n", path); fclose(f); return NULL; }
+    if (!buf)
+    {
+        fprintf(stderr, "Out of memory reading: %s\n", path);
+        fclose(f);
+        return NULL;
+    }
     size_t rd = fread(buf, 1, (size_t)n, f);
     fclose(f);
     buf[rd] = '\0';
-    if (out_len) *out_len = rd;
+    if (out_len)
+        *out_len = rd;
     return buf;
 }
 
 static const char *GRAMMAR =
-  "identifier          : /[A-Za-z_][A-Za-z0-9_]*/ ;\n"
-  "\n"
-  "type_kw         : \"const\" | \"volatile\" | \"restrict\" | \"_Thread_local\" | \"_Atomic\"\n"
-  "                | \"signed\" | \"unsigned\" | \"short\" | \"long\"\n"
-  "                | \"static\" | \"inline\" ;\n"
-  "\n"
-  "base_type       : \"struct\" <identifier>\n"
-  "                | \"union\"  <identifier>\n"
-  "                | \"enum\"   <identifier>\n"
-  "                | \"void\" | \"char\" | \"short\" | \"int\" | \"long\"\n"
-  "                | \"float\" | \"double\" | \"bool\"\n"
-  "                | <identifier> ;\n"
-  "\n"
-  "type_prefix     : ( <type_kw> )* <base_type> ( <type_kw> )* ;\n"
-  "ptr_qual        : ( \"const\" | \"volatile\" | \"restrict\" )* ;\n"
-  "ptr_part        : ( \"*\" <ptr_qual> )+ ;\n"
-  "array_suffix    : ( \"[\" (/[0-9]+/)? \"]\" )* ;\n"
-  "declarator      : ( <ptr_part> )? <identifier> <array_suffix> ;\n"
-  "\n"
-  "declarator_list     : <declarator> ( \",\" <declarator> )* ;\n"
-  "\n"
-  "param_void          : \"void\" ;\n"
-  "param_item          : <type_prefix> <declarator> ;\n"
-  "param_list_nonempty : <param_item> ( \",\" <param_item> )* ;\n"
-  "param_list          : ( <param_void> | <param_list_nonempty> )? ;\n"
-  "\n"
-  "access_mod          : \"public\" | \"protected\" | \"private\" ;\n"
-  "\n"
-  "method_sig          : <type_prefix> <identifier> \"(\" <param_list> \")\" ;\n"
-  "field_sig           : <type_prefix> <declarator> ;\n"
-  "\n"
-  "method_decl         : ( <access_mod> )? <type_prefix> <identifier> \"(\" <param_list> \")\" \";\" ;\n"
-  "field_decl          : ( <access_mod> )? <type_prefix> <declarator> \";\" ;\n"
-  "\n"
-  "member              : <method_decl> | <field_decl> ;\n"
-  "\n"
-  "extends_opt         : ( \"extends\" <identifier> )? ;\n"
-  "impl_list           : <identifier> ( \",\" <identifier> )* ;\n"
-  "implements_opt      : ( \"implements\" <impl_list> )? ;\n"
-  "\n"
-  "kw_typedef          : \"typedef\" ;\n"
-  "\n"
-  "class_fwd           : \"class\" <identifier> \";\" ;\n"
-  "interface_fwd       : \"interface\" <identifier> \";\" ;\n"
-  "\n"
-  "typedef_class       : <kw_typedef> \"class\" <identifier> <extends_opt> <implements_opt> \"{\" ( <member> )* \"}\" <identifier> \";\" ;\n"
-  "typedef_iface       : <kw_typedef> \"interface\" <identifier> \"{\" ( <method_decl> )* \"}\" <identifier> \";\" ;\n"
-  "\n"
-  "interface_body      : \"{\" ( <method_decl> )* \"}\" ;\n"
-  "interface_decl      : \"interface\" <identifier> <interface_body> ( \";\" )? ;\n"
-  "\n"
-  "class_body          : \"{\" ( <member> )* \"}\" ;\n"
-  "class_decl          : \"class\" <identifier> <extends_opt> <implements_opt> <class_body> ( <declarator_list> )? ( \";\" )? ;\n"
-  "\n"
-  "decl                : <class_decl> | <interface_decl>\n"
-  "                    | <class_fwd> | <interface_fwd>\n"
-  "                    | <typedef_class> | <typedef_iface> ;\n"
-  "\n"
-  "program             : /^/ <decl>* /$/ ;\n"
-;
+    "identifier          : /[A-Za-z_][A-Za-z0-9_]*/ ;\n"
+    "\n"
+    "type_kw         : \"const\" | \"volatile\" | \"restrict\" | \"_Thread_local\" | \"_Atomic\"\n"
+    "                | \"signed\" | \"unsigned\" | \"short\" | \"long\"\n"
+    "                | \"static\" | \"inline\" ;\n"
+    "\n"
+    "base_type       : \"struct\" <identifier>\n"
+    "                | \"union\"  <identifier>\n"
+    "                | \"enum\"   <identifier>\n"
+    "                | \"void\" | \"char\" | \"short\" | \"int\" | \"long\"\n"
+    "                | \"float\" | \"double\" | \"bool\"\n"
+    "                | <identifier> ;\n"
+    "\n"
+    "type_prefix     : ( <type_kw> )* <base_type> ( <type_kw> )* ;\n"
+    "ptr_qual        : ( \"const\" | \"volatile\" | \"restrict\" )* ;\n"
+    "ptr_part        : ( \"*\" <ptr_qual> )+ ;\n"
+    "array_suffix    : ( \"[\" (/[0-9]+/)? \"]\" )* ;\n"
+    "declarator      : ( <ptr_part> )? <identifier> <array_suffix> ;\n"
+    "\n"
+    "declarator_list     : <declarator> ( \",\" <declarator> )* ;\n"
+    "\n"
+    "param_void          : \"void\" ;\n"
+    "param_item          : <type_prefix> <declarator> ;\n"
+    "param_list_nonempty : <param_item> ( \",\" <param_item> )* ;\n"
+    "param_list          : ( <param_void> | <param_list_nonempty> )? ;\n"
+    "\n"
+    "access_mod          : \"public\" | \"protected\" | \"private\" ;\n"
+    "\n"
+    "method_sig          : <type_prefix> <identifier> \"(\" <param_list> \")\" ;\n"
+    "field_sig           : <type_prefix> <declarator> ;\n"
+    "\n"
+    "method_decl         : ( <access_mod> )? <type_prefix> <identifier> \"(\" <param_list> \")\" \";\" ;\n"
+    "field_decl          : ( <access_mod> )? <type_prefix> <declarator> \";\" ;\n"
+    "\n"
+    "member              : <method_decl> | <field_decl> ;\n"
+    "\n"
+    "extends_opt         : ( \"extends\" <identifier> )? ;\n"
+    "impl_list           : <identifier> ( \",\" <identifier> )* ;\n"
+    "implements_opt      : ( \"implements\" <impl_list> )? ;\n"
+    "\n"
+    "kw_typedef          : \"typedef\" ;\n"
+    "\n"
+    "class_fwd           : \"class\" <identifier> \";\" ;\n"
+    "interface_fwd       : \"interface\" <identifier> \";\" ;\n"
+    "\n"
+    "typedef_class       : <kw_typedef> \"class\" <identifier> <extends_opt> <implements_opt> \"{\" ( <member> )* \"}\" <identifier> \";\" ;\n"
+    "typedef_iface       : <kw_typedef> \"interface\" <identifier> \"{\" ( <method_decl> )* \"}\" <identifier> \";\" ;\n"
+    "\n"
+    "interface_body      : \"{\" ( <method_decl> )* \"}\" ;\n"
+    "interface_decl      : \"interface\" <identifier> <interface_body> ( \";\" )? ;\n"
+    "\n"
+    "class_body          : \"{\" ( <member> )* \"}\" ;\n"
+    "class_decl          : \"class\" <identifier> <extends_opt> <implements_opt> <class_body> ( <declarator_list> )? ( \";\" )? ;\n"
+    "\n"
+    "decl                : <class_decl> | <interface_decl>\n"
+    "                    | <class_fwd> | <interface_fwd>\n"
+    "                    | <typedef_class> | <typedef_iface> ;\n"
+    "\n"
+    "program             : /^/ <decl>* /$/ ;\n";
 
 /* ============== Parser rules ============== */
 static mpc_parser_t *identifier;
@@ -131,21 +151,23 @@ static mpc_parser_t *class_decl;
 static mpc_parser_t *decl;
 static mpc_parser_t *program;
 
-static void usage(const char *argv0) {
+static void usage(const char *argv0)
+{
     fprintf(stderr,
-        "Usage:\n"
-        "  %s -G\n"
-        "  %s -f <input.cplus[.h]>\n"
-        "  %s -x \"<source>\"\n"
-        "\n"
-        "Options:\n"
-        "  -G          Print the embedded grammar and exit\n"
-        "  -f <path>   Parse the given Cplus header/source file\n"
-        "  -x <text>   Parse the given text directly\n",
-        argv0, argv0, argv0);
+            "Usage:\n"
+            "  %s -G\n"
+            "  %s -f <input.cplus[.h]>\n"
+            "  %s -x \"<source>\"\n"
+            "\n"
+            "Options:\n"
+            "  -G          Print the embedded grammar and exit\n"
+            "  -f <path>   Parse the given Cplus header/source file\n"
+            "  -x <text>   Parse the given text directly\n",
+            argv0, argv0, argv0);
 }
 
-static int build_all_parsers(void) {
+static int build_all_parsers(void)
+{
     identifier = mpc_new("identifier");
     type_kw = mpc_new("type_kw");
     base_type = mpc_new("base_type");
@@ -181,90 +203,67 @@ static int build_all_parsers(void) {
     program = mpc_new("program");
     /* mpca_lang returns mpc_err_t* (NULL on success) */
     mpc_err_t *err = mpca_lang(MPCA_LANG_DEFAULT, GRAMMAR,
-        identifier,
-        type_kw,
-        base_type,
-        type_prefix,
-        ptr_qual,
-        ptr_part,
-        array_suffix,
-        declarator,
-        declarator_list,
-        param_void,
-        param_item,
-        param_list_nonempty,
-        param_list,
-        access_mod,
-        method_sig,
-        field_sig,
-        method_decl,
-        field_decl,
-        member,
-        extends_opt,
-        impl_list,
-        implements_opt,
-        kw_typedef,
-        class_fwd,
-        interface_fwd,
-        typedef_class,
-        typedef_iface,
-        interface_body,
-        interface_decl,
-        class_body,
-        class_decl,
-        decl,
-        program,
-        NULL);
-    if (err) { mpc_err_print(err); mpc_err_delete(err); return 0; }
+                               identifier,
+                               type_kw,
+                               base_type,
+                               type_prefix,
+                               ptr_qual,
+                               ptr_part,
+                               array_suffix,
+                               declarator,
+                               declarator_list,
+                               param_void,
+                               param_item,
+                               param_list_nonempty,
+                               param_list,
+                               access_mod,
+                               method_sig,
+                               field_sig,
+                               method_decl,
+                               field_decl,
+                               member,
+                               extends_opt,
+                               impl_list,
+                               implements_opt,
+                               kw_typedef,
+                               class_fwd,
+                               interface_fwd,
+                               typedef_class,
+                               typedef_iface,
+                               interface_body,
+                               interface_decl,
+                               class_body,
+                               class_decl,
+                               decl,
+                               program,
+                               NULL);
+    if (err)
+    {
+        mpc_err_print(err);
+        mpc_err_delete(err);
+        return 0;
+    }
     return 1;
 }
 
-static void cleanup_all_parsers(void) {
-    mpc_cleanup(33, identifier
-, type_kw
-, base_type
-, type_prefix
-, ptr_qual
-, ptr_part
-, array_suffix
-, declarator
-, declarator_list
-, param_void
-, param_item
-, param_list_nonempty
-, param_list
-, access_mod
-, method_sig
-, field_sig
-, method_decl
-, field_decl
-, member
-, extends_opt
-, impl_list
-, implements_opt
-, kw_typedef
-, class_fwd
-, interface_fwd
-, typedef_class
-, typedef_iface
-, interface_body
-, interface_decl
-, class_body
-, class_decl
-, decl
-, program
-);
+static void cleanup_all_parsers(void)
+{
+    mpc_cleanup(33, identifier, type_kw, base_type, type_prefix, ptr_qual, ptr_part, array_suffix, declarator, declarator_list, param_void, param_item, param_list_nonempty, param_list, access_mod, method_sig, field_sig, method_decl, field_decl, member, extends_opt, impl_list, implements_opt, kw_typedef, class_fwd, interface_fwd, typedef_class, typedef_iface, interface_body, interface_decl, class_body, class_decl, decl, program);
 }
 
-static int parse_source(const char *input_name, const char *source) {
+static int parse_source(const char *input_name, const char *source)
+{
     mpc_result_t r;
-    if (mpc_parse(input_name, source, program, &r)) {
+    if (mpc_parse(input_name, source, program, &r))
+    {
         puts("== PARSE SUCCESS ==");
-        print_program(r.output);
+        // print_program(r.output);
         mpc_ast_print(r.output);
         mpc_ast_delete(r.output);
         return 0;
-    } else {
+    }
+    else
+    {
         fprintf(stderr, "== PARSE ERROR ==\n");
         mpc_err_print(r.error);
         mpc_err_delete(r.error);
@@ -272,43 +271,77 @@ static int parse_source(const char *input_name, const char *source) {
     }
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     const char *file_path = NULL;
     const char *expr_text = NULL;
     int print_grammar = 0;
 
-    for (int i = 1; i < argc; ++i) {
-        if (strcmp(argv[i], "-G") == 0) {
+    for (int i = 1; i < argc; ++i)
+    {
+        if (strcmp(argv[i], "-G") == 0)
+        {
             print_grammar = 1;
-        } else if (strcmp(argv[i], "-f") == 0) {
-            if (i + 1 >= argc) { usage(argv[0]); return 2; }
+        }
+        else if (strcmp(argv[i], "-f") == 0)
+        {
+            if (i + 1 >= argc)
+            {
+                usage(argv[0]);
+                return 2;
+            }
             file_path = argv[++i];
-        } else if (strcmp(argv[i], "-x") == 0) {
-            if (i + 1 >= argc) { usage(argv[0]); return 2; }
+        }
+        else if (strcmp(argv[i], "-x") == 0)
+        {
+            if (i + 1 >= argc)
+            {
+                usage(argv[0]);
+                return 2;
+            }
             expr_text = argv[++i];
-        } else {
+        }
+        else
+        {
             usage(argv[0]);
             return 2;
         }
     }
 
-    if (print_grammar + (file_path != NULL) + (expr_text != NULL) != 1) {
+    if (print_grammar + (file_path != NULL) + (expr_text != NULL) != 1)
+    {
         usage(argv[0]);
         return 2;
     }
 
-    if (print_grammar) { fputs(GRAMMAR, stdout); return 0; }
+    if (print_grammar)
+    {
+        fputs(GRAMMAR, stdout);
+        return 0;
+    }
 
-    if (!build_all_parsers()) { cleanup_all_parsers(); return 4; }
+    if (!build_all_parsers())
+    {
+        cleanup_all_parsers();
+        return 4;
+    }
 
     int rc = 0;
-    if (file_path) {
+    if (file_path)
+    {
         size_t src_len = 0;
         char *src = slurp(file_path, &src_len);
-        if (!src) { fprintf(stderr, "Failed to read input file: %s\n", file_path); cleanup_all_parsers(); return 5; }
+        if (!src)
+        {
+            fprintf(stderr, "Failed to read input file: %s\n", file_path);
+            cleanup_all_parsers();
+            return 5;
+        }
         rc = parse_source(file_path, src);
         free(src);
-    } else if (expr_text) {
+    }
+    else if (expr_text)
+    {
         rc = parse_source("<cmdline>", expr_text);
     }
 
