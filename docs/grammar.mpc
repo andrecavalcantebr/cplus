@@ -1,59 +1,35 @@
-identifier          : /[A-Za-z_][A-Za-z0-9_]*/ ;
+program           : /^/ <decl>* /$/ ;
+decl              : <interface> | <class> | <c_chunk> ;
 
-type_kw         : "const" | "volatile" | "restrict" | "_Thread_local" | "_Atomic"
-                | "signed" | "unsigned" | "short" | "long"
-                | "static" | "inline" ;
+identifier        : /[A-Za-z_][A-Za-z0-9_]*/ ;
 
-base_type       : "struct" <identifier>
-                | "union"  <identifier>
-                | "enum"   <identifier>
-                | "void" | "char" | "short" | "int" | "long"
-                | "float" | "double" | "bool"
-                | <identifier> ;
+type_name         : <identifier> <generic_args_opt> <ptr_suffix> ;
+generic_args_opt  : ("<" <type_list> ">")? ;
+type_list         : <type_name> ("," <type_name>)* ;
+ptr_suffix        : ("*")* ;
 
-type_prefix     : ( <type_kw> )* <base_type> ( <type_kw> )* ;
-ptr_qual        : ( "const" | "volatile" | "restrict" )* ;
-ptr_part        : ( "*" <ptr_qual> )+ ;
-array_suffix    : ( "[" (/[0-9]+/)? "]" )* ;
-declarator      : ( <ptr_part> )? <identifier> <array_suffix> ;
+param_list        : (<param> ("," <param>)*)? ;
+param             : <type_name> <identifier> ;
 
-declarator_list     : <declarator> ( "," <declarator> )* ;
+interface         : "interface" <identifier> "{" <interface_item>* "}" (";")? ;
+interface_item    : <method_sig> ";" | <c_comment> ;
+method_sig        : <type_name> <identifier> "(" <param_list> ")" ;
 
-param_void          : "void" ;
-param_item          : <type_prefix> <declarator> ;
-param_list_nonempty : <param_item> ( "," <param_item> )* ;
-param_list          : ( <param_void> | <param_list_nonempty> )? ;
+class             : "class" <identifier> <class_tail> "{" <class_item>* "}" (";")? ;
+class_tail        : ("extends" <identifier>)? ("implements" <ident_list>)? ;
+ident_list        : <identifier> ("," <identifier>)* ;
 
-access_mod          : "public" | "protected" | "private" ;
+class_item        : <member_decl> | <c_comment> | <c_pp_line> ;
+member_decl       : <access_mods_opt> <type_name> <identifier> <member_after_name> ;
+access_mods_opt   : (<access_kw>)* ;
+access_kw         : "public" | "protected" | "private" ;
 
-method_sig          : <type_prefix> <identifier> "(" <param_list> ")" ;
-field_sig           : <type_prefix> <declarator> ;
+member_after_name : "(" <param_list> ")" ";"
+                  | ";" ;
 
-method_decl         : ( <access_mod> )? <type_prefix> <identifier> "(" <param_list> ")" ";" ;
-field_decl          : ( <access_mod> )? <type_prefix> <declarator> ";" ;
-
-member              : <method_decl> | <field_decl> ;
-
-extends_opt         : ( "extends" <identifier> )? ;
-impl_list           : <identifier> ( "," <identifier> )* ;
-implements_opt      : ( "implements" <impl_list> )? ;
-
-kw_typedef          : "typedef" ;
-
-class_fwd           : "class" <identifier> ";" ;
-interface_fwd       : "interface" <identifier> ";" ;
-
-typedef_class       : <kw_typedef> "class" <identifier> <extends_opt> <implements_opt> "{" ( <member> )* "}" <identifier> ";" ;
-typedef_iface       : <kw_typedef> "interface" <identifier> "{" ( <method_decl> )* "}" <identifier> ";" ;
-
-interface_body      : "{" ( <method_decl> )* "}" ;
-interface_decl      : "interface" <identifier> <interface_body> ( ";" )? ;
-
-class_body          : "{" ( <member> )* "}" ;
-class_decl          : "class" <identifier> <extends_opt> <implements_opt> <class_body> ( <declarator_list> )? ( ";" )? ;
-
-decl                : <class_decl> | <interface_decl>
-                    | <class_fwd> | <interface_fwd>
-                    | <typedef_class> | <typedef_iface> ;
-
-program             : /^/ <decl>* /$/ ;
+c_pp_line         : /#[^\n]*/ ;
+c_line_comment    : /\/\/[^\n]*/ ;
+c_block_comment   : /\/\*([^*]|\*+[^*\/])*\*+\// ;
+c_comment         : <c_line_comment> | <c_block_comment> ;
+c_decl_like       : /[^;{}]+[;{}]/ ;
+c_chunk           : <c_pp_line> | <c_comment> | <c_decl_like> ;

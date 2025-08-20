@@ -74,7 +74,43 @@ auto c = obj as IClone;
 ```
 
 ### new, del
-Keywords for allocation and deallocation.  
+Keywords for allocation and deallocation. 
+
+---
+
+# Basic Syntax Rules
+
+```ebnf
+class         : "class" <identifier> ( generics_decl)? ( <extends_decl> )? ( <implem_decl> )? '{' <member_list> '}' ';' ;
+
+generics_decl : '<' <type_name> '>' ;
+
+type_name     : <identifier> ;
+
+extends_decl  : "extends" <identifier> ;
+
+implem_decl   : "implements" <identifier> (',' identifier) ;
+
+member_list   : <variable_decl> | <method_decl> ;
+
+variable_decl : <c_variable> ;
+
+method_decl   : <access_kw> <c_prototype> ;
+
+access_kw     : "public" | "protected" | "private" ;
+
+interface     : "interface" <identifier> '{' ( method_decl )* '}' ';'
+
+identifier    : <c_identifier>
+```
+
+OBS:
+
+* Grammars must be generated without comment
+
+* The gen_parse tool can generate the main.c parser with must parse any source code from Cplus that respect the grammar
+
+* 
 
 ---
 
@@ -205,4 +241,17 @@ Allows composition of multiple files following standard C practices.
 **Generated C naming:**  
 * `Class_method` for normal methods.  
 * `Class__sys_init`, `Class__sys_deinit` are generated automatically.  
-* Virtual methods in the vtable use fixed signatures for the class.  
+* Virtual methods in the vtable use fixed signatures for the class. 
+
+---
+
+# Generics
+Cplus have simple generics.
+
+**Syntax:**
+```java
+List<int> list;   // creates a list of ints 
+
+```
+
+

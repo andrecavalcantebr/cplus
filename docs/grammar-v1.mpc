@@ -1,0 +1,59 @@
+identifier          : /[A-Za-z_][A-Za-z0-9_]*/ ;
+
+type_kw         : "const" | "volatile" | "restrict" | "_Thread_local" | "_Atomic"
+                | "signed" | "unsigned" | "short" | "long"
+                | "static" | "inline" ;
+
+base_type       : "struct" <identifier>
+                | "union"  <identifier>
+                | "enum"   <identifier>
+                | "void" | "char" | "short" | "int" | "long"
+                | "float" | "double" | "bool"
+                | <identifier> ;
+
+type_prefix     : ( <type_kw> )* <base_type> ( <type_kw> )* ;
+ptr_qual        : ( "const" | "volatile" | "restrict" )* ;
+ptr_part        : ( "*" <ptr_qual> )+ ;
+array_suffix    : ( "[" (/[0-9]+/)? "]" )* ;
+declarator      : ( <ptr_part> )? <identifier> <array_suffix> ;
+
+declarator_list     : <declarator> ( "," <declarator> )* ;
+
+param_void          : "void" ;
+param_item          : <type_prefix> <declarator> ;
+param_list_nonempty : <param_item> ( "," <param_item> )* ;
+param_list          : ( <param_void> | <param_list_nonempty> )? ;
+
+access_mod          : "public" | "protected" | "private" ;
+
+method_sig          : <type_prefix> <identifier> "(" <param_list> ")" ;
+field_sig           : <type_prefix> <declarator> ;
+
+method_decl         : ( <access_mod> )? <type_prefix> <identifier> "(" <param_list> ")" ";" ;
+field_decl          : ( <access_mod> )? <type_prefix> <declarator> ";" ;
+
+member              : <method_decl> | <field_decl> ;
+
+extends_opt         : ( "extends" <identifier> )? ;
+impl_list           : <identifier> ( "," <identifier> )* ;
+implements_opt      : ( "implements" <impl_list> )? ;
+
+kw_typedef          : "typedef" ;
+
+class_fwd           : "class" <identifier> ";" ;
+interface_fwd       : "interface" <identifier> ";" ;
+
+typedef_class       : <kw_typedef> "class" <identifier> <extends_opt> <implements_opt> "{" ( <member> )* "}" <identifier> ";" ;
+typedef_iface       : <kw_typedef> "interface" <identifier> "{" ( <method_decl> )* "}" <identifier> ";" ;
+
+interface_body      : "{" ( <method_decl> )* "}" ;
+interface_decl      : "interface" <identifier> <interface_body> ( ";" )? ;
+
+class_body          : "{" ( <member> )* "}" ;
+class_decl          : "class" <identifier> <extends_opt> <implements_opt> <class_body> ( <declarator_list> )? ( ";" )? ;
+
+decl                : <class_decl> | <interface_decl>
+                    | <class_fwd> | <interface_fwd>
+                    | <typedef_class> | <typedef_iface> ;
+
+program             : /^/ <decl>* /$/ ;
