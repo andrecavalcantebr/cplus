@@ -110,7 +110,6 @@ OBS:
 
 * The gen_parse tool can generate the main.c parser with must parse any source code from Cplus that respect the grammar
 
-* 
 
 ---
 
@@ -228,7 +227,8 @@ Allows composition of multiple files following standard C practices.
 # C Code Generation
 
 * All visibilities become public structs in C.  
-* Encapsulation is guaranteed by the transpiler, not at runtime.  
+* Encapsulation is guaranteed by the transpiler, not at runtime. 
+  * The programmer can be use of opaque types to enable real encapsulation in C, but he/she needs use heap allocation/deallocation
 * Virtual methods → vtable function pointers.  
 * `#line` used to map _errors/warnings_ to `.cplus` sources.  
   * Forward: real line in `.cplus`.  
@@ -250,8 +250,13 @@ Cplus have simple generics.
 
 **Syntax:**
 ```java
-List<int> list;   // creates a list of ints 
+List<int> list;   // creates a list of ints
 
 ```
 
+Generated code:
+
+```c
+List_int list;    //creates a list of ints
+```
 
