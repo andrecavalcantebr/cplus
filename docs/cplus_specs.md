@@ -80,29 +80,7 @@ Keywords for allocation and deallocation.
 
 # Basic Syntax Rules
 
-```ebnf
-class         : "class" <identifier> ( generics_decl)? ( <extends_decl> )? ( <implem_decl> )? '{' <member_list> '}' ';' ;
-
-generics_decl : '<' <type_name> '>' ;
-
-type_name     : <identifier> ;
-
-extends_decl  : "extends" <identifier> ;
-
-implem_decl   : "implements" <identifier> (',' identifier) ;
-
-member_list   : <variable_decl> | <method_decl> ;
-
-variable_decl : <c_variable> ;
-
-method_decl   : <access_kw> <c_prototype> ;
-
-access_kw     : "public" | "protected" | "private" ;
-
-interface     : "interface" <identifier> '{' ( method_decl )* '}' ';'
-
-identifier    : <c_identifier>
-```
+See grammar.mpc
 
 OBS:
 

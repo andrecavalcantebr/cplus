@@ -1,0 +1,35 @@
+program           : /^/ <decl>* /$/ ;
+decl              : <interface> | <class> | <c_chunk> ;
+
+identifier        : /[A-Za-z_][A-Za-z0-9_]*/ ;
+
+type_name         : <identifier> <generic_args_opt> <ptr_suffix> ;
+generic_args_opt  : ("<" <type_list> ">")? ;
+type_list         : <type_name> ("," <type_name>)* ;
+ptr_suffix        : ("*")* ;
+
+param_list        : (<param> ("," <param>)*)? ;
+param             : <type_name> <identifier> ;
+
+interface         : "interface" <identifier> "{" <interface_item>* "}" (";")? ;
+interface_item    : <method_sig> ";" | <c_comment> ;
+method_sig        : <type_name> <identifier> "(" <param_list> ")" ;
+
+class             : "class" <identifier> <class_tail> "{" <class_item>* "}" (";")? ;
+class_tail        : ("extends" <identifier>)? ("implements" <ident_list>)? ;
+ident_list        : <identifier> ("," <identifier>)* ;
+
+class_item        : <member_decl> | <c_comment> | <c_pp_line> ;
+member_decl       : <access_mods_opt> <type_name> <identifier> <member_after_name> ;
+access_mods_opt   : (<access_kw>)* ;
+access_kw         : "public" | "protected" | "private" ;
+
+member_after_name : "(" <param_list> ")" ";"
+                  | ";" ;
+
+c_pp_line         : /#[^\n]*/ ;
+c_line_comment    : /\/\/[^\n]*/ ;
+c_block_comment   : /\/\*([^*]|\*+[^*\/])*\*+\// ;
+c_comment         : <c_line_comment> | <c_block_comment> ;
+c_decl_like       : /[^;{}]+[;{}]/ ;
+c_chunk           : <c_pp_line> | <c_comment> | <c_decl_like> ;
