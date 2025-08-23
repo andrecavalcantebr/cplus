@@ -146,9 +146,21 @@ static void collect_rules(const char *g, size_t glen, StrVec *rules)
         case NORM:
             if (c == '/')
             {
-                st = SLASH;
+                if (i + 1 < glen && g[i + 1] == '/')
+                {
+                    st = LINE_COMMENT;
+                    i += 2;
+                    break;
+                }
+                if (i + 1 < glen && g[i + 1] == '*')
+                {
+                    st = BLOCK_COMMENT;
+                    i += 2;
+                    break;
+                }
+                st = REGEX;
                 i++;
-                continue;
+                break;
             }
             if (c == '\'')
             {
@@ -160,13 +172,6 @@ static void collect_rules(const char *g, size_t glen, StrVec *rules)
             if (c == '\"')
             {
                 st = DQ;
-                i++;
-                esc = 0;
-                continue;
-            }
-            if (c == '/')
-            {
-                st = REGEX;
                 i++;
                 esc = 0;
                 continue;
@@ -196,23 +201,6 @@ static void collect_rules(const char *g, size_t glen, StrVec *rules)
             }
             /* track possible identifiers, not strictly needed here */
             i++;
-            break;
-
-        case SLASH:
-            if (c == '/')
-            {
-                st = LINE_COMMENT;
-                i++;
-                continue;
-            }
-            if (c == '*')
-            {
-                st = BLOCK_COMMENT;
-                i++;
-                continue;
-            }
-            /* not a comment; treat as normal char '/' */
-            st = NORM;
             break;
 
         case LINE_COMMENT:
