@@ -1,4 +1,4 @@
-# cplus
+# Cplus
 
 Cplus is an experiment over C language. We fall back 30 years and we reedit C with Class.
 
@@ -14,3 +14,12 @@ Like C you can use heap or stack.
 
 See docs/cplus_specs.md to more detail.
 
+
+## Baseline
+
+The project has a baseline marker:
+
+- Commit message: "Baseline: snapshot of current project (grammar, parser, tests all green)"
+- Tag: `baseline`
+
+This commit represents the state where all grammar, parser, and test suite files were synchronized and passed successfully.
