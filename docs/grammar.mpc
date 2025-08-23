@@ -21,7 +21,7 @@ array_suffix      : ("[" /[0-9]*/ "]")* ;
 param_void        : "void" ;
 
 param_list        : (<param_void> | <param> ("," <param>)*)? ;
-param             : <type_name> <identifier> ;
+param             : <type_name> <identifier> <array_suffix> ;
 
 interface         : "interface" <identifier> <generic_args_opt> "{" <interface_item>* "}" (";")? ;
 interface_item    : <method_sig> ";" | <c_comment> ;
@@ -33,10 +33,11 @@ ident_list        : <identifier> ("," <identifier>)* ;
 
 class_item        : <member_decl> | <c_comment> | <c_pp_line> ;
 
-member_decl       : <access_mods_opt> <storage_mods_opt> <type_name> <identifier> <member_after_name> ;
-access_mods_opt   : (<access_kw>)* ;
-access_kw         : "public" | "protected" | "private" ;
-storage_mods_opt  : ("static")* ;
+mods_opt         : ( <access_kw> | <storage_kw> )* ;
+member_decl      : <mods_opt> <type_name> <identifier> <member_after_name> ;
+
+access_kw        : "public" | "protected" | "private" ;
+storage_kw       : "static" ;
 
 member_after_name : "(" <param_list> ")" ";" 
                     | <array_suffix> ";"      
@@ -51,17 +52,20 @@ typedef_interface : "typedef" "interface" <identifier>
 forward_class     : "class" <identifier> ";" ;
 forward_interface : "interface" <identifier> ";" ;
 
+
+
 c_pp_line         : /#[^\n]*/ ;
 c_line_comment    : /\/\/[^\n]*/ ;
 c_block_comment   : /\/\*([^*]|\*+[^*\/])*\*+\// ;
 c_comment         : <c_line_comment> | <c_block_comment> ;
+c_decl_line       : /[^\n;]*;/ ;
+c_decl_multiline  : /([^;]|\n)+;/ ;
+c_block_open      : /([^{}]|\n)*\{/ ;
+c_block_close     : /[[:space:]]*}[[:space:]]*;?/ ;
 
-c_decl_line       : /(?![[:space:]]*(class|interface)\b)
-                    (?![[:space:]]*typedef[[:space:]]+(class|interface)\b)
-                    [^\n;]*;/ ;
-
-c_decl_like       : /(?![[:space:]]*(class|interface)\b)
-                    (?![[:space:]]*typedef[[:space:]]+(class|interface)\b)
-                    [^;{}]+[;{}]/ ;
-
-c_chunk           : <c_pp_line> | <c_comment> | <c_decl_line> | <c_decl_like> ;
+c_chunk           : <c_pp_line>
+                  | <c_comment>
+                  | <c_decl_line>
+                  | <c_decl_multiline>
+                  | <c_block_open>
+                  | <c_block_close> ;

@@ -58,7 +58,7 @@ static const char *GRAMMAR =
   "param_void        : \"void\" ;\n"
   "\n"
   "param_list        : (<param_void> | <param> (\",\" <param>)*)? ;\n"
-  "param             : <type_name> <identifier> ;\n"
+  "param             : <type_name> <identifier> <array_suffix> ;\n"
   "\n"
   "interface         : \"interface\" <identifier> <generic_args_opt> \"{\" <interface_item>* \"}\" (\";\")? ;\n"
   "interface_item    : <method_sig> \";\" | <c_comment> ;\n"
@@ -70,10 +70,11 @@ static const char *GRAMMAR =
   "\n"
   "class_item        : <member_decl> | <c_comment> | <c_pp_line> ;\n"
   "\n"
-  "member_decl       : <access_mods_opt> <storage_mods_opt> <type_name> <identifier> <member_after_name> ;\n"
-  "access_mods_opt   : (<access_kw>)* ;\n"
-  "access_kw         : \"public\" | \"protected\" | \"private\" ;\n"
-  "storage_mods_opt  : (\"static\")* ;\n"
+  "mods_opt         : ( <access_kw> | <storage_kw> )* ;\n"
+  "member_decl      : <mods_opt> <type_name> <identifier> <member_after_name> ;\n"
+  "\n"
+  "access_kw        : \"public\" | \"protected\" | \"private\" ;\n"
+  "storage_kw       : \"static\" ;\n"
   "\n"
   "member_after_name : \"(\" <param_list> \")\" \";\" \n"
   "                    | <array_suffix> \";\"      \n"
@@ -88,20 +89,23 @@ static const char *GRAMMAR =
   "forward_class     : \"class\" <identifier> \";\" ;\n"
   "forward_interface : \"interface\" <identifier> \";\" ;\n"
   "\n"
+  "\n"
+  "\n"
   "c_pp_line         : /#[^\\n]*/ ;\n"
   "c_line_comment    : /\\/\\/[^\\n]*/ ;\n"
   "c_block_comment   : /\\/\\*([^*]|\\*+[^*\\/])*\\*+\\// ;\n"
   "c_comment         : <c_line_comment> | <c_block_comment> ;\n"
+  "c_decl_line       : /[^\\n;]*;/ ;\n"
+  "c_decl_multiline  : /([^;]|\\n)+;/ ;\n"
+  "c_block_open      : /([^{}]|\\n)*\\{/ ;\n"
+  "c_block_close     : /[[:space:]]*}[[:space:]]*;?/ ;\n"
   "\n"
-  "c_decl_line       : /(?![[:space:]]*(class|interface)\\b)\n"
-  "                    (?![[:space:]]*typedef[[:space:]]+(class|interface)\\b)\n"
-  "                    [^\\n;]*;/ ;\n"
-  "\n"
-  "c_decl_like       : /(?![[:space:]]*(class|interface)\\b)\n"
-  "                    (?![[:space:]]*typedef[[:space:]]+(class|interface)\\b)\n"
-  "                    [^;{}]+[;{}]/ ;\n"
-  "\n"
-  "c_chunk           : <c_pp_line> | <c_comment> | <c_decl_line> | <c_decl_like> ;\n"
+  "c_chunk           : <c_pp_line>\n"
+  "                  | <c_comment>\n"
+  "                  | <c_decl_line>\n"
+  "                  | <c_decl_multiline>\n"
+  "                  | <c_block_open>\n"
+  "                  | <c_block_close> ;\n"
 ;
 
 /* ============== Parser rules ============== */
@@ -124,10 +128,10 @@ static mpc_parser_t *class;
 static mpc_parser_t *class_tail;
 static mpc_parser_t *ident_list;
 static mpc_parser_t *class_item;
+static mpc_parser_t *mods_opt;
 static mpc_parser_t *member_decl;
-static mpc_parser_t *access_mods_opt;
 static mpc_parser_t *access_kw;
-static mpc_parser_t *storage_mods_opt;
+static mpc_parser_t *storage_kw;
 static mpc_parser_t *member_after_name;
 static mpc_parser_t *typedef_class;
 static mpc_parser_t *typedef_interface;
@@ -138,8 +142,9 @@ static mpc_parser_t *c_line_comment;
 static mpc_parser_t *c_block_comment;
 static mpc_parser_t *c_comment;
 static mpc_parser_t *c_decl_line;
-static mpc_parser_t *space;
-static mpc_parser_t *c_decl_like;
+static mpc_parser_t *c_decl_multiline;
+static mpc_parser_t *c_block_open;
+static mpc_parser_t *c_block_close;
 static mpc_parser_t *c_chunk;
 
 static void usage(const char *argv0) {
@@ -176,10 +181,10 @@ static int build_all_parsers(void) {
     class_tail = mpc_new("class_tail");
     ident_list = mpc_new("ident_list");
     class_item = mpc_new("class_item");
+    mods_opt = mpc_new("mods_opt");
     member_decl = mpc_new("member_decl");
-    access_mods_opt = mpc_new("access_mods_opt");
     access_kw = mpc_new("access_kw");
-    storage_mods_opt = mpc_new("storage_mods_opt");
+    storage_kw = mpc_new("storage_kw");
     member_after_name = mpc_new("member_after_name");
     typedef_class = mpc_new("typedef_class");
     typedef_interface = mpc_new("typedef_interface");
@@ -190,8 +195,9 @@ static int build_all_parsers(void) {
     c_block_comment = mpc_new("c_block_comment");
     c_comment = mpc_new("c_comment");
     c_decl_line = mpc_new("c_decl_line");
-    space = mpc_new("space");
-    c_decl_like = mpc_new("c_decl_like");
+    c_decl_multiline = mpc_new("c_decl_multiline");
+    c_block_open = mpc_new("c_block_open");
+    c_block_close = mpc_new("c_block_close");
     c_chunk = mpc_new("c_chunk");
     /* mpca_lang returns mpc_err_t* (NULL on success) */
     mpc_err_t *err = mpca_lang(MPCA_LANG_DEFAULT, GRAMMAR,
@@ -214,10 +220,10 @@ static int build_all_parsers(void) {
         class_tail,
         ident_list,
         class_item,
+        mods_opt,
         member_decl,
-        access_mods_opt,
         access_kw,
-        storage_mods_opt,
+        storage_kw,
         member_after_name,
         typedef_class,
         typedef_interface,
@@ -228,8 +234,9 @@ static int build_all_parsers(void) {
         c_block_comment,
         c_comment,
         c_decl_line,
-        space,
-        c_decl_like,
+        c_decl_multiline,
+        c_block_open,
+        c_block_close,
         c_chunk,
         NULL);
     if (err) { mpc_err_print(err); mpc_err_delete(err); return 0; }
@@ -237,7 +244,7 @@ static int build_all_parsers(void) {
 }
 
 static void cleanup_all_parsers(void) {
-    mpc_cleanup(36, program
+    mpc_cleanup(37, program
 , decl
 , identifier
 , type_qual
@@ -256,10 +263,10 @@ static void cleanup_all_parsers(void) {
 , class_tail
 , ident_list
 , class_item
+, mods_opt
 , member_decl
-, access_mods_opt
 , access_kw
-, storage_mods_opt
+, storage_kw
 , member_after_name
 , typedef_class
 , typedef_interface
@@ -270,8 +277,9 @@ static void cleanup_all_parsers(void) {
 , c_block_comment
 , c_comment
 , c_decl_line
-, space
-, c_decl_like
+, c_decl_multiline
+, c_block_open
+, c_block_close
 , c_chunk
 );
 }

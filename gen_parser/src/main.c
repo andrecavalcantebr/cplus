@@ -127,7 +127,6 @@ static void collect_rules(const char *g, size_t glen, StrVec *rules)
     enum
     {
         NORM,
-        SLASH,
         LINE_COMMENT,
         BLOCK_COMMENT,
         SQ,

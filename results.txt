@@ -63,7 +63,7 @@
     identifier|regex:1:7 'Buffer'
     string:1:14 '{'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:2:5 'public'
+      mods_opt|access_kw|string:2:5 'public'
       type_name|identifier|regex:2:12 'void'
       identifier|regex:2:17 'clear'
       member_after_name|> 
@@ -71,7 +71,7 @@
         string:2:23 ')'
         string:2:24 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:3:5 'public'
+      mods_opt|access_kw|string:3:5 'public'
       type_name|identifier|regex:3:12 'int'
       identifier|regex:3:17 'size'
       member_after_name|> 
@@ -79,12 +79,12 @@
         string:3:22 ')'
         string:3:23 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:4:5 'private'
+      mods_opt|access_kw|string:4:5 'private'
       type_name|identifier|regex:4:13 'int'
       identifier|regex:4:18 'cap'
       member_after_name|string:4:21 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:5:5 'private'
+      mods_opt|access_kw|string:5:5 'private'
       type_name|identifier|regex:5:13 'int'
       identifier|regex:5:18 'len'
       member_after_name|string:5:21 ';'
@@ -116,7 +116,7 @@
         string:4:18 ')'
         string:4:19 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:5:5 'public'
+      mods_opt|access_kw|string:5:5 'public'
       type_name|identifier|regex:5:12 'void'
       identifier|regex:5:17 'shout'
       member_after_name|> 
@@ -152,7 +152,7 @@
     identifier|regex:5:7 'Bag'
     string:5:11 '{'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:6:5 'public'
+      mods_opt|access_kw|string:6:5 'public'
       type_name|> 
         identifier|regex:6:12 'List'
         generic_args_opt|> 
@@ -163,7 +163,7 @@
       member_after_name|string:6:26 ';'
     class_item|c_comment|c_line_comment|regex:6:35 '// generic level 1'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:7:5 'public'
+      mods_opt|access_kw|string:7:5 'public'
       type_name|identifier|regex:7:12 'int'
       identifier|regex:7:16 'push'
       member_after_name|> 
@@ -174,7 +174,7 @@
         string:7:26 ')'
         string:7:27 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:9:5 'protected'
+      mods_opt|access_kw|string:9:5 'protected'
       type_name|> 
         identifier|regex:9:15 'Map'
         generic_args_opt|> 
@@ -188,7 +188,7 @@
       member_after_name|string:9:34 ';'
     class_item|c_comment|c_line_comment|regex:9:38 '// generic with two args (still level 1)'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:11:5 'private'
+      mods_opt|access_kw|string:11:5 'private'
       type_name|identifier|regex:11:13 'int'
       identifier|regex:11:17 'capacity'
       member_after_name|string:11:25 ';'
@@ -299,7 +299,7 @@
       identifier|regex:10:9 'k'
       member_after_name|string:10:10 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:11:5 'private'
+      mods_opt|access_kw|string:11:5 'private'
       type_name|identifier|regex:11:13 'int'
       identifier|regex:11:17 'push'
       member_after_name|> 
@@ -351,8 +351,9 @@
     identifier|regex:1:7 'Device'
     string:1:14 '{'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:2:5 'public'
-      storage_mods_opt|string:2:12 'static'
+      mods_opt|> 
+        access_kw|string:2:5 'public'
+        storage_kw|string:2:12 'static'
       type_name|identifier|regex:2:19 'int'
       identifier|regex:2:23 'version'
       member_after_name|> 
@@ -361,25 +362,26 @@
         string:2:35 ')'
         string:2:36 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:3:5 'public'
+      mods_opt|access_kw|string:3:5 'public'
       type_name|identifier|regex:3:12 'int'
       identifier|regex:3:16 'id'
       member_after_name|string:3:18 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:4:5 'protected'
-      storage_mods_opt|string:4:15 'static'
+      mods_opt|> 
+        access_kw|string:4:5 'protected'
+        storage_kw|string:4:15 'static'
       type_name|identifier|regex:4:22 'int'
       identifier|regex:4:26 'live_count'
       member_after_name|string:4:36 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:5:5 'private'
+      mods_opt|access_kw|string:5:5 'private'
       type_name|> 
         identifier|regex:5:13 'char'
         ptr_suffix|string:5:18 '*'
       identifier|regex:5:19 'name'
       member_after_name|string:5:23 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:7:5 'public'
+      mods_opt|access_kw|string:7:5 'public'
       type_name|identifier|regex:7:12 'int'
       identifier|regex:7:16 'rename'
       member_after_name|> 
@@ -442,7 +444,7 @@
     identifier|regex:4:7 'Base'
     string:4:12 '{'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:5:5 'public'
+      mods_opt|access_kw|string:5:5 'public'
       type_name|identifier|regex:5:12 'int'
       identifier|regex:5:16 'baseMethod'
       member_after_name|> 
@@ -469,12 +471,12 @@
         identifier|regex:8:45 'IBar'
     string:8:50 '{'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:9:5 'private'
+      mods_opt|access_kw|string:9:5 'private'
       type_name|identifier|regex:9:13 'int'
       identifier|regex:9:17 'state'
       member_after_name|string:9:22 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:10:5 'public'
+      mods_opt|access_kw|string:10:5 'public'
       type_name|identifier|regex:10:12 'int'
       identifier|regex:10:16 'foo'
       member_after_name|> 
@@ -483,7 +485,7 @@
         string:10:24 ')'
         string:10:25 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:11:5 'public'
+      mods_opt|access_kw|string:11:5 'public'
       type_name|identifier|regex:11:12 'void'
       identifier|regex:11:17 'bar'
       member_after_name|> 
@@ -549,20 +551,21 @@
       string:6:15 '>'
     string:6:17 '{'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:7:5 'public'
+      mods_opt|access_kw|string:7:5 'public'
       type_name|> 
         identifier|regex:7:12 'T'
         ptr_suffix|string:7:14 '*'
       identifier|regex:7:15 'data'
       member_after_name|string:7:19 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:8:5 'public'
+      mods_opt|access_kw|string:8:5 'public'
       type_name|identifier|regex:8:12 'int'
       identifier|regex:8:16 'length'
       member_after_name|string:8:22 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:9:5 'public'
-      storage_mods_opt|string:9:12 'static'
+      mods_opt|> 
+        access_kw|string:9:5 'public'
+        storage_kw|string:9:12 'static'
       type_name|> 
         identifier|regex:9:19 'Vector'
         generic_args_opt|> 
@@ -579,7 +582,7 @@
         string:9:42 ')'
         string:9:43 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:10:5 'public'
+      mods_opt|access_kw|string:10:5 'public'
       type_name|identifier|regex:10:12 'T'
       identifier|regex:10:14 'getAt'
       member_after_name|> 
@@ -611,7 +614,7 @@
       string:13:15 '>'
     string:13:17 '{'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:14:5 'public'
+      mods_opt|access_kw|string:14:5 'public'
       type_name|> 
         identifier|regex:14:12 'T'
         ptr_suffix|> 
@@ -625,7 +628,7 @@
           string:14:22 ']'
         string:14:23 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:15:5 'public'
+      mods_opt|access_kw|string:15:5 'public'
       type_name|identifier|regex:15:12 'int'
       identifier|regex:15:16 'dims'
       member_after_name|> 
@@ -635,7 +638,7 @@
           string:15:22 ']'
         string:15:23 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:16:5 'public'
+      mods_opt|access_kw|string:16:5 'public'
       type_name|identifier|regex:16:12 'T'
       identifier|regex:16:14 'get'
       member_after_name|> 
@@ -706,13 +709,14 @@
     identifier|regex:6:15 'Counter'
     string:6:23 '{'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:7:5 'private'
+      mods_opt|access_kw|string:7:5 'private'
       type_name|identifier|regex:7:13 'int'
       identifier|regex:7:17 'v'
       member_after_name|string:7:18 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:8:5 'public'
-      storage_mods_opt|string:8:12 'static'
+      mods_opt|> 
+        access_kw|string:8:5 'public'
+        storage_kw|string:8:12 'static'
       type_name|> 
         identifier|regex:8:19 'Counter'
         ptr_suffix|string:8:26 '*'
@@ -725,7 +729,7 @@
         string:8:43 ')'
         string:8:44 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:9:5 'public'
+      mods_opt|access_kw|string:9:5 'public'
       type_name|identifier|regex:9:12 'int'
       identifier|regex:9:16 'inc'
       member_after_name|> 
@@ -738,7 +742,7 @@
         string:9:33 ')'
         string:9:34 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:10:5 'public'
+      mods_opt|access_kw|string:10:5 'public'
       type_name|identifier|regex:10:12 'int'
       identifier|regex:10:16 'value'
       member_after_name|> 
@@ -793,12 +797,12 @@
       ident_list|identifier|regex:8:23 'IService'
     string:8:32 '{'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:9:5 'private'
+      mods_opt|access_kw|string:9:5 'private'
       type_name|identifier|regex:9:13 'int'
       identifier|regex:9:17 'code'
       member_after_name|string:9:21 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:10:5 'public'
+      mods_opt|access_kw|string:10:5 'public'
       type_name|identifier|regex:10:12 'int'
       identifier|regex:10:16 'run'
       member_after_name|> 
@@ -815,7 +819,18 @@
   regex 
 
 ==== ./tests/13_c_chunk_mixed.cplus.h ====
-./tests/13_c_chunk_mixed.cplus.h:5:1: error: expected "typedef", "class", "interface", '#', '/', '?', newline or end of input at 'e'
+== PARSE SUCCESS ==
+> 
+  regex 
+  decl|c_chunk|c_comment|c_line_comment|regex:1:1 '// C preprocessor line:'
+  decl|c_chunk|c_pp_line|regex:2:1 '#define SOME_MACRO 42'
+  decl|c_chunk|c_comment|c_line_comment|regex:4:1 '// C declaration-like line:'
+  decl|c_chunk|c_decl_line|regex:5:1 'extern int some_c_symbol;'
+  decl|c_chunk|c_comment|c_line_comment|regex:7:1 '// Function pointer typedef in C (should go to c_chunk):'
+  decl|c_chunk|c_decl_line|regex:8:1 'typedef int (*cmp_fn)(const void*, const void*);'
+  decl|c_chunk|c_comment|c_line_comment|regex:10:1 '// Struct tag line (C-ish):'
+  decl|c_chunk|c_decl_line|regex:11:1 'struct FooTag;'
+  regex 
 
 ==== ./tests/14_arrays_pointers_mix.cplus.h ====
 == PARSE SUCCESS ==
@@ -882,7 +897,7 @@
       string:6:14 '>'
     string:6:16 '{'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:7:5 'private'
+      mods_opt|access_kw|string:7:5 'private'
       type_name|> 
         identifier|regex:7:13 'T'
         ptr_suffix|string:7:15 '*'
@@ -894,13 +909,14 @@
           string:7:24 ']'
         string:7:25 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:8:5 'private'
+      mods_opt|access_kw|string:8:5 'private'
       type_name|identifier|regex:8:13 'int'
       identifier|regex:8:17 'used'
       member_after_name|string:8:21 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:9:5 'public'
-      storage_mods_opt|string:9:12 'static'
+      mods_opt|> 
+        access_kw|string:9:5 'public'
+        storage_kw|string:9:12 'static'
       type_name|> 
         identifier|regex:9:19 'Store'
         generic_args_opt|> 
@@ -917,7 +933,7 @@
         string:9:43 ')'
         string:9:44 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:10:5 'public'
+      mods_opt|access_kw|string:10:5 'public'
       type_name|identifier|regex:10:12 'int'
       identifier|regex:10:16 'put'
       member_after_name|> 
@@ -939,7 +955,7 @@
         string:10:42 ')'
         string:10:43 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:11:5 'public'
+      mods_opt|access_kw|string:11:5 'public'
       type_name|identifier|regex:11:12 'T'
       identifier|regex:11:14 'get'
       member_after_name|> 
@@ -962,6 +978,83 @@
         string:11:42 ';'
     string:12:1 '}'
     string:12:2 ';'
+  regex 
+
+==== ./tests/15_c_chunk_blocks.cplus.h ====
+== PARSE SUCCESS ==
+> 
+  regex 
+  decl|c_chunk|c_comment|c_line_comment|regex:1:1 '// opener'
+  decl|c_chunk|c_decl_multiline|regex:2:1 'extern "C" {
+// mid
+int k;'
+  decl|c_chunk|c_decl_multiline|regex:5:1 '}
+// after block
+interface IX { void foo();'
+  decl|c_chunk|c_decl_line|regex:7:28 '};'
+  regex 
+
+==== ./tests/16_c_multiline_decl.cplus.h ====
+== PARSE SUCCESS ==
+> 
+  regex 
+  decl|c_chunk|c_comment|c_line_comment|regex:1:1 '// multiline declaration ending with ;'
+  decl|c_chunk|c_decl_multiline|regex:2:1 'extern
+int
+z
+;'
+  decl|interface|> 
+    string:6:1 'interface'
+    identifier|regex:6:11 'IY'
+    string:6:14 '{'
+    interface_item|> 
+      method_sig|> 
+        type_name|identifier|regex:6:16 'int'
+        identifier|regex:6:20 'bar'
+        string:6:23 '('
+        param_list|param|> 
+          type_name|identifier|regex:6:24 'int'
+          identifier|regex:6:28 'x'
+        string:6:29 ')'
+      string:6:30 ';'
+    string:6:32 '}'
+    string:6:33 ';'
+  regex 
+
+==== ./tests/17_c_close_brace_alone.cplus.h ====
+== PARSE SUCCESS ==
+> 
+  regex 
+  decl|c_chunk|c_comment|c_line_comment|regex:1:1 '// stray closing brace line (should be swallowed)'
+  decl|c_chunk|c_decl_multiline|regex:2:1 '}
+class C { int a;'
+  decl|c_chunk|c_decl_line|regex:3:18 '};'
+  regex 
+
+==== ./tests/18_param_array_tiny.cplus.h ====
+== PARSE SUCCESS ==
+> 
+  regex 
+  decl|interface|> 
+    string:1:1 'interface'
+    identifier|regex:1:11 'IA'
+    string:1:14 '{'
+    interface_item|> 
+      method_sig|> 
+        type_name|identifier|regex:1:16 'void'
+        identifier|regex:1:21 'set'
+        string:1:24 '('
+        param_list|param|> 
+          type_name|identifier|regex:1:25 'int'
+          identifier|regex:1:29 'a'
+          array_suffix|> 
+            string:1:30 '['
+            regex:1:31 '10'
+            string:1:33 ']'
+        string:1:34 ')'
+      string:1:35 ';'
+    string:1:37 '}'
+    string:1:38 ';'
   regex 
 
 ==== ./tests/demo.cplus.h ====
@@ -994,7 +1087,7 @@
     identifier|regex:8:7 'Device'
     string:8:14 '{'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:9:5 'public'
+      mods_opt|access_kw|string:9:5 'public'
       type_name|identifier|regex:9:12 'void'
       identifier|regex:9:17 'power_on'
       member_after_name|> 
@@ -1009,12 +1102,12 @@
         string:10:20 ')'
         string:10:21 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:11:5 'protected'
+      mods_opt|access_kw|string:11:5 'protected'
       type_name|identifier|regex:11:15 'int'
       identifier|regex:11:19 'voltage'
       member_after_name|string:11:26 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:12:5 'private'
+      mods_opt|access_kw|string:12:5 'private'
       type_name|identifier|regex:12:13 'bool'
       identifier|regex:12:18 'status'
       member_after_name|string:12:24 ';'
@@ -1030,7 +1123,7 @@
       ident_list|identifier|regex:15:39 'IStartable'
     string:15:50 '{'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:16:5 'public'
+      mods_opt|access_kw|string:16:5 'public'
       type_name|identifier|regex:16:12 'void'
       identifier|regex:16:17 'start'
       member_after_name|> 
@@ -1038,7 +1131,7 @@
         string:16:23 ')'
         string:16:24 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:17:5 'public'
+      mods_opt|access_kw|string:17:5 'public'
       type_name|identifier|regex:17:12 'void'
       identifier|regex:17:17 'stop'
       member_after_name|> 
@@ -1046,7 +1139,7 @@
         string:17:22 ')'
         string:17:23 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:18:5 'public'
+      mods_opt|access_kw|string:18:5 'public'
       type_name|identifier|regex:18:12 'void'
       identifier|regex:18:17 'set_speed'
       member_after_name|> 
@@ -1057,12 +1150,12 @@
         string:18:34 ')'
         string:18:35 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:19:5 'protected'
+      mods_opt|access_kw|string:19:5 'protected'
       type_name|identifier|regex:19:15 'int'
       identifier|regex:19:19 'current_rpm'
       member_after_name|string:19:30 ';'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:20:5 'private'
+      mods_opt|access_kw|string:20:5 'private'
       type_name|identifier|regex:20:13 'bool'
       identifier|regex:20:18 'enabled'
       member_after_name|string:20:25 ';'
@@ -1092,7 +1185,7 @@
     identifier|regex:5:7 'Y'
     string:5:9 '{'
     class_item|member_decl|> 
-      access_mods_opt|access_kw|string:6:5 'public'
+      mods_opt|access_kw|string:6:5 'public'
       type_name|identifier|regex:6:12 'void'
       identifier|regex:6:17 'b'
       member_after_name|> 

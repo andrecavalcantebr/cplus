@@ -5,7 +5,7 @@ if [ $# -gt 0 ]; then
   exec >"$1" 2>&1
 fi
 
-for f in ./tests/*.cplus.h; do
+for f in ./tests/*.cplus.h /tests/*.cplus; do
   echo "==== $f ===="
   ./parser/parser -f "$f"
   echo
