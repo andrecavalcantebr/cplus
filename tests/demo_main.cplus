@@ -1,0 +1,27 @@
+/* demo.cplus — Exemplo para testar parser Cplus */
+
+#include <stdlib.h>
+#include <stdio.h>
+
+#include "demo.cp.h"
+
+int main() {
+  printf("Motor\n");
+  Motor _m, *m = &_m;
+  
+  Device_power_on(m as Device);
+  
+  m->start(m);
+  
+  printf("Motor is running...\n");
+  
+  m->set_speed(m, 10);
+  
+  m->stop(m);
+  
+  printf("Motor is running...\n");
+  
+  Device_power_off(m as Device);
+  return 0;
+}
+

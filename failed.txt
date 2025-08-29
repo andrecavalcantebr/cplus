@@ -1,0 +1,53 @@
+=== Running FAILED tests ===
+==== ./tests/failed/01_missing_semicolon.cplus.h ====
+== PARSE ERROR ==
+./tests/failed/01_missing_semicolon.cplus.h:4:1: error: expected ";", none of '{}', '
+' or '{' at '}'
+✅ Correctly failed
+
+==== ./tests/failed/02_class_no_brace.cplus.h ====
+== PARSE ERROR ==
+./tests/failed/02_class_no_brace.cplus.h:4:1: error: expected "public", "protected", "private", "static", "const", "volatile", "restrict", one of 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_', '/', '#', "}", none of '{}', '
+' or '{' at end of input
+✅ Correctly failed
+
+==== ./tests/failed/03_interface_field.cplus.h ====
+== PARSE ERROR ==
+./tests/failed/03_interface_field.cplus.h:5:1: error: expected none of '{}', '
+' or '{' at '}'
+✅ Correctly failed
+
+==== ./tests/failed/04_double_access_modifier.cplus.h ====
+== PARSE ERROR ==
+./tests/failed/04_double_access_modifier.cplus.h:4:1: error: expected none of '{}', '
+' or '{' at '}'
+✅ Correctly failed
+
+==== ./tests/failed/05_bad_generic_syntax.cplus.h ====
+== PARSE ERROR ==
+./tests/failed/05_bad_generic_syntax.cplus.h:4:1: error: expected none of '{}', '
+' or '{' at '}'
+✅ Correctly failed
+
+==== ./tests/failed/06_typedef_wrong.cplus.h ====
+== PARSE ERROR ==
+./tests/failed/06_typedef_wrong.cplus.h:4:3: error: expected one of 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_' at ';'
+✅ Correctly failed
+
+==== ./tests/failed/07_class_header_incomplete.cplus.h ====
+== PARSE ERROR ==
+./tests/failed/07_class_header_incomplete.cplus.h:4:1: error: expected "public", "protected", "private", "static", "const", "volatile", "restrict", one of 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_', '/', '#', "}", none of '{}', '
+' or '{' at end of input
+✅ Correctly failed
+
+==== ./tests/failed/08_typedef_class_missing_name.cplus.h ====
+== PARSE ERROR ==
+./tests/failed/08_typedef_class_missing_name.cplus.h:3:3: error: expected one of 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_' at ';'
+✅ Correctly failed
+
+==== ./tests/failed/09_two_access_mods.cplus.h ====
+== PARSE ERROR ==
+./tests/failed/09_two_access_mods.cplus.h:3:1: error: expected none of '{}', '
+' or '{' at '}'
+✅ Correctly failed
+

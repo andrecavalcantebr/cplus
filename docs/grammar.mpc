@@ -33,8 +33,15 @@ ident_list        : <identifier> ("," <identifier>)* ;
 
 class_item        : <member_decl> | <c_comment> | <c_pp_line> ;
 
-mods_opt         : ( <access_kw> | <storage_kw> )* ;
-member_decl      : <mods_opt> <type_name> <identifier> <member_after_name> ;
+mods_opt         : ( <access_kw> <storage_kw_opt> )
+                 | ( <storage_kw> <access_kw_opt> )
+                 | ( <access_kw> )
+                 | ( <storage_kw> ) ;
+
+access_kw_opt    : (<access_kw>)? ;
+storage_kw_opt   : (<storage_kw>)? ;
+
+member_decl      : <mods_opt> <type_name> <identifier> <member_after_name> | <type_name> <identifier> <member_after_name> ;
 
 access_kw        : "public" | "protected" | "private" ;
 storage_kw       : "static" ;
@@ -52,14 +59,15 @@ typedef_interface : "typedef" "interface" <identifier>
 forward_class     : "class" <identifier> ";" ;
 forward_interface : "interface" <identifier> ";" ;
 
-
-
 c_pp_line         : /#[^\n]*/ ;
 c_line_comment    : /\/\/[^\n]*/ ;
 c_block_comment   : /\/\*([^*]|\*+[^*\/])*\*+\// ;
 c_comment         : <c_line_comment> | <c_block_comment> ;
+
 c_decl_line       : /[^\n;]*;/ ;
+
 c_decl_multiline  : /([^;]|\n)+;/ ;
+
 c_block_open      : /([^{}]|\n)*\{/ ;
 c_block_close     : /[[:space:]]*}[[:space:]]*;?/ ;
 

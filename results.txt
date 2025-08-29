@@ -1,4 +1,5 @@
-==== ./tests/00_basic_interface.cplus.h ====
+=== Running PASSED tests ===
+==== ./tests/passed/00_basic_interface.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -17,7 +18,7 @@
     string:3:2 ';'
   regex 
 
-==== ./tests/01_interface_params.cplus.h ====
+==== ./tests/passed/01_interface_params.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -54,7 +55,7 @@
     string:4:2 ';'
   regex 
 
-==== ./tests/02_class_fields_methods_sections.cplus.h ====
+==== ./tests/passed/02_class_fields_methods_sections.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -92,7 +93,7 @@
     string:6:2 ';'
   regex 
 
-==== ./tests/03_class_members_outside_sections.cplus.h ====
+==== ./tests/passed/03_class_members_outside_sections.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -130,7 +131,7 @@
     string:6:2 ';'
   regex 
 
-==== ./tests/04_generics_list_map.cplus.h ====
+==== ./tests/passed/04_generics_list_map.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -196,7 +197,7 @@
     string:12:2 ';'
   regex 
 
-==== ./tests/05_mixed_interfaces_classes.cplus.h ====
+==== ./tests/passed/05_mixed_interfaces_classes.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -263,7 +264,7 @@
     string:13:2 ';'
   regex 
 
-==== ./tests/06_whitespace_and_comments.cplus.h ====
+==== ./tests/passed/06_whitespace_and_comments.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -313,7 +314,7 @@
     string:12:2 ';'
   regex 
 
-==== ./tests/07_interface_basic.cplus.h ====
+==== ./tests/passed/07_interface_basic.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -342,7 +343,7 @@
     string:5:2 ';'
   regex 
 
-==== ./tests/08_class_access_static.cplus.h ====
+==== ./tests/passed/08_class_access_static.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -353,7 +354,7 @@
     class_item|member_decl|> 
       mods_opt|> 
         access_kw|string:2:5 'public'
-        storage_kw|string:2:12 'static'
+        storage_kw_opt|storage_kw|string:2:12 'static'
       type_name|identifier|regex:2:19 'int'
       identifier|regex:2:23 'version'
       member_after_name|> 
@@ -369,7 +370,7 @@
     class_item|member_decl|> 
       mods_opt|> 
         access_kw|string:4:5 'protected'
-        storage_kw|string:4:15 'static'
+        storage_kw_opt|storage_kw|string:4:15 'static'
       type_name|identifier|regex:4:22 'int'
       identifier|regex:4:26 'live_count'
       member_after_name|string:4:36 ';'
@@ -405,7 +406,7 @@
     string:8:2 ';'
   regex 
 
-==== ./tests/09_extends_implements.cplus.h ====
+==== ./tests/passed/09_extends_implements.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -499,7 +500,7 @@
     string:12:2 ';'
   regex 
 
-==== ./tests/10_generics_typename_arrays.cplus.h ====
+==== ./tests/passed/10_generics_typename_arrays.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -565,7 +566,7 @@
     class_item|member_decl|> 
       mods_opt|> 
         access_kw|string:9:5 'public'
-        storage_kw|string:9:12 'static'
+        storage_kw_opt|storage_kw|string:9:12 'static'
       type_name|> 
         identifier|regex:9:19 'Vector'
         generic_args_opt|> 
@@ -667,7 +668,7 @@
     string:17:2 ';'
   regex 
 
-==== ./tests/11_typedef_class_interface.cplus.h ====
+==== ./tests/passed/11_typedef_class_interface.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -716,7 +717,7 @@
     class_item|member_decl|> 
       mods_opt|> 
         access_kw|string:8:5 'public'
-        storage_kw|string:8:12 'static'
+        storage_kw_opt|storage_kw|string:8:12 'static'
       type_name|> 
         identifier|regex:8:19 'Counter'
         ptr_suffix|string:8:26 '*'
@@ -759,7 +760,7 @@
     string:11:10 ';'
   regex 
 
-==== ./tests/12_forwards_and_use.cplus.h ====
+==== ./tests/passed/12_forwards_and_use.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -818,7 +819,7 @@
     string:11:2 ';'
   regex 
 
-==== ./tests/13_c_chunk_mixed.cplus.h ====
+==== ./tests/passed/13_c_chunk_mixed.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -832,7 +833,7 @@
   decl|c_chunk|c_decl_line|regex:11:1 'struct FooTag;'
   regex 
 
-==== ./tests/14_arrays_pointers_mix.cplus.h ====
+==== ./tests/passed/14_arrays_pointers_mix.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -916,7 +917,7 @@
     class_item|member_decl|> 
       mods_opt|> 
         access_kw|string:9:5 'public'
-        storage_kw|string:9:12 'static'
+        storage_kw_opt|storage_kw|string:9:12 'static'
       type_name|> 
         identifier|regex:9:19 'Store'
         generic_args_opt|> 
@@ -980,7 +981,7 @@
     string:12:2 ';'
   regex 
 
-==== ./tests/15_c_chunk_blocks.cplus.h ====
+==== ./tests/passed/15_c_chunk_blocks.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -994,7 +995,7 @@ interface IX { void foo();'
   decl|c_chunk|c_decl_line|regex:7:28 '};'
   regex 
 
-==== ./tests/16_c_multiline_decl.cplus.h ====
+==== ./tests/passed/16_c_multiline_decl.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -1021,7 +1022,7 @@ z
     string:6:33 ';'
   regex 
 
-==== ./tests/17_c_close_brace_alone.cplus.h ====
+==== ./tests/passed/17_c_close_brace_alone.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -1031,7 +1032,7 @@ class C { int a;'
   decl|c_chunk|c_decl_line|regex:3:18 '};'
   regex 
 
-==== ./tests/18_param_array_tiny.cplus.h ====
+==== ./tests/passed/18_param_array_tiny.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
@@ -1057,142 +1058,82 @@ class C { int a;'
     string:1:38 ';'
   regex 
 
-==== ./tests/demo.cplus.h ====
+==== ./tests/passed/19_empty.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
-  decl|c_chunk|c_comment|c_block_comment|regex:1:1 '/* demo.h — Exemplo mínimo para testar parser Cplus */'
-  decl|interface|> 
-    string:3:1 'interface'
-    identifier|regex:3:11 'IStartable'
-    string:3:22 '{'
-    interface_item|> 
-      method_sig|> 
-        type_name|identifier|regex:4:5 'void'
-        identifier|regex:4:10 'start'
-        string:4:15 '('
-        string:4:16 ')'
-      string:4:17 ';'
-    interface_item|> 
-      method_sig|> 
-        type_name|identifier|regex:5:5 'void'
-        identifier|regex:5:10 'stop'
-        string:5:14 '('
-        string:5:15 ')'
-      string:5:16 ';'
-    string:6:1 '}'
-    string:6:2 ';'
-  decl|class|> 
-    string:8:1 'class'
-    identifier|regex:8:7 'Device'
-    string:8:14 '{'
-    class_item|member_decl|> 
-      mods_opt|access_kw|string:9:5 'public'
-      type_name|identifier|regex:9:12 'void'
-      identifier|regex:9:17 'power_on'
-      member_after_name|> 
-        string:9:25 '('
-        string:9:26 ')'
-        string:9:27 ';'
-    class_item|member_decl|> 
-      type_name|identifier|regex:10:5 'void'
-      identifier|regex:10:10 'power_off'
-      member_after_name|> 
-        string:10:19 '('
-        string:10:20 ')'
-        string:10:21 ';'
-    class_item|member_decl|> 
-      mods_opt|access_kw|string:11:5 'protected'
-      type_name|identifier|regex:11:15 'int'
-      identifier|regex:11:19 'voltage'
-      member_after_name|string:11:26 ';'
-    class_item|member_decl|> 
-      mods_opt|access_kw|string:12:5 'private'
-      type_name|identifier|regex:12:13 'bool'
-      identifier|regex:12:18 'status'
-      member_after_name|string:12:24 ';'
-    string:13:1 '}'
-    string:13:2 ';'
-  decl|class|> 
-    string:15:1 'class'
-    identifier|regex:15:7 'Motor'
-    class_tail|> 
-      string:15:13 'extends'
-      identifier|regex:15:21 'Device'
-      string:15:28 'implements'
-      ident_list|identifier|regex:15:39 'IStartable'
-    string:15:50 '{'
-    class_item|member_decl|> 
-      mods_opt|access_kw|string:16:5 'public'
-      type_name|identifier|regex:16:12 'void'
-      identifier|regex:16:17 'start'
-      member_after_name|> 
-        string:16:22 '('
-        string:16:23 ')'
-        string:16:24 ';'
-    class_item|member_decl|> 
-      mods_opt|access_kw|string:17:5 'public'
-      type_name|identifier|regex:17:12 'void'
-      identifier|regex:17:17 'stop'
-      member_after_name|> 
-        string:17:21 '('
-        string:17:22 ')'
-        string:17:23 ';'
-    class_item|member_decl|> 
-      mods_opt|access_kw|string:18:5 'public'
-      type_name|identifier|regex:18:12 'void'
-      identifier|regex:18:17 'set_speed'
-      member_after_name|> 
-        string:18:26 '('
-        param_list|param|> 
-          type_name|identifier|regex:18:27 'int'
-          identifier|regex:18:31 'rpm'
-        string:18:34 ')'
-        string:18:35 ';'
-    class_item|member_decl|> 
-      mods_opt|access_kw|string:19:5 'protected'
-      type_name|identifier|regex:19:15 'int'
-      identifier|regex:19:19 'current_rpm'
-      member_after_name|string:19:30 ';'
-    class_item|member_decl|> 
-      mods_opt|access_kw|string:20:5 'private'
-      type_name|identifier|regex:20:13 'bool'
-      identifier|regex:20:18 'enabled'
-      member_after_name|string:20:25 ';'
-    string:21:1 '}'
-    string:21:2 ';'
   regex 
 
-==== ./tests/mini.cplus.h ====
+=== Running FAILED tests ===
+==== ./tests/failed/01_missing_semicolon.cplus.h ====
+== PARSE ERROR ==
+./tests/failed/01_missing_semicolon.cplus.h:5:1: error: expected none of ';', '
+' or ';' at end of input
+✅ Correctly failed
+
+==== ./tests/failed/02_class_no_brace.cplus.h ====
 == PARSE SUCCESS ==
 > 
   regex 
-  decl|interface|> 
-    string:1:1 'interface'
-    identifier|regex:1:11 'X'
-    string:1:13 '{'
-    interface_item|> 
-      method_sig|> 
-        type_name|identifier|regex:2:5 'void'
-        identifier|regex:2:10 'a'
-        string:2:11 '('
-        string:2:12 ')'
-      string:2:13 ';'
-    string:3:1 '}'
-    string:3:2 ';'
-  decl|class|> 
-    string:5:1 'class'
-    identifier|regex:5:7 'Y'
-    string:5:9 '{'
-    class_item|member_decl|> 
-      mods_opt|access_kw|string:6:5 'public'
-      type_name|identifier|regex:6:12 'void'
-      identifier|regex:6:17 'b'
-      member_after_name|> 
-        string:6:18 '('
-        string:6:19 ')'
-        string:6:20 ';'
-    string:7:1 '}'
-    string:7:2 ';'
+  decl|c_chunk|c_comment|c_line_comment|regex:1:1 '// Classe sem fechar a chave'
+  decl|c_chunk|c_decl_multiline|regex:2:1 'class Broken {
+    int x;'
   regex 
+❌ Expected FAIL, but got SUCCESS
+
+==== ./tests/failed/03_interface_field.cplus.h ====
+== PARSE ERROR ==
+./tests/failed/03_interface_field.cplus.h:6:1: error: expected none of ';', '
+' or ';' at end of input
+✅ Correctly failed
+
+==== ./tests/failed/04_double_access_modifier.cplus.h ====
+== PARSE ERROR ==
+./tests/failed/04_double_access_modifier.cplus.h:5:1: error: expected none of ';', '
+' or ';' at end of input
+✅ Correctly failed
+
+==== ./tests/failed/05_bad_generic_syntax.cplus.h ====
+== PARSE ERROR ==
+./tests/failed/05_bad_generic_syntax.cplus.h:5:1: error: expected none of ';', '
+' or ';' at end of input
+✅ Correctly failed
+
+==== ./tests/failed/06_typedef_wrong.cplus.h ====
+== PARSE SUCCESS ==
+> 
+  regex 
+  decl|c_chunk|c_comment|c_line_comment|regex:1:1 '// typedef malformado'
+  decl|c_chunk|c_decl_multiline|regex:2:1 'typedef class Counter {
+    int v;'
+  decl|c_chunk|c_decl_line|regex:4:1 '} ;'
+  decl|c_chunk|c_comment|c_line_comment|regex:4:5 '// falta o identificador depois de }'
+  regex 
+❌ Expected FAIL, but got SUCCESS
+
+==== ./tests/failed/07_class_header_incomplete.cplus.h ====
+== PARSE SUCCESS ==
+> 
+  regex 
+  decl|c_chunk|c_decl_multiline|regex:1:1 'class X {
+    int a;'
+  decl|c_chunk|c_comment|c_line_comment|regex:3:1 '// sem fechar'
+  regex 
+❌ Expected FAIL, but got SUCCESS
+
+==== ./tests/failed/08_typedef_class_missing_name.cplus.h ====
+== PARSE SUCCESS ==
+> 
+  regex 
+  decl|c_chunk|c_decl_multiline|regex:1:1 'typedef class T {
+    int v;'
+  decl|c_chunk|c_decl_line|regex:3:1 '} ;'
+  regex 
+❌ Expected FAIL, but got SUCCESS
+
+==== ./tests/failed/09_two_access_mods.cplus.h ====
+== PARSE ERROR ==
+./tests/failed/09_two_access_mods.cplus.h:4:1: error: expected none of ';', '
+' or ';' at end of input
+✅ Correctly failed
 

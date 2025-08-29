@@ -70,8 +70,15 @@ static const char *GRAMMAR =
   "\n"
   "class_item        : <member_decl> | <c_comment> | <c_pp_line> ;\n"
   "\n"
-  "mods_opt         : ( <access_kw> | <storage_kw> )* ;\n"
-  "member_decl      : <mods_opt> <type_name> <identifier> <member_after_name> ;\n"
+  "mods_opt         : ( <access_kw> <storage_kw_opt> )\n"
+  "                 | ( <storage_kw> <access_kw_opt> )\n"
+  "                 | ( <access_kw> )\n"
+  "                 | ( <storage_kw> ) ;\n"
+  "\n"
+  "access_kw_opt    : (<access_kw>)? ;\n"
+  "storage_kw_opt   : (<storage_kw>)? ;\n"
+  "\n"
+  "member_decl      : <mods_opt> <type_name> <identifier> <member_after_name> | <type_name> <identifier> <member_after_name> ;\n"
   "\n"
   "access_kw        : \"public\" | \"protected\" | \"private\" ;\n"
   "storage_kw       : \"static\" ;\n"
@@ -89,14 +96,15 @@ static const char *GRAMMAR =
   "forward_class     : \"class\" <identifier> \";\" ;\n"
   "forward_interface : \"interface\" <identifier> \";\" ;\n"
   "\n"
-  "\n"
-  "\n"
   "c_pp_line         : /#[^\\n]*/ ;\n"
   "c_line_comment    : /\\/\\/[^\\n]*/ ;\n"
   "c_block_comment   : /\\/\\*([^*]|\\*+[^*\\/])*\\*+\\// ;\n"
   "c_comment         : <c_line_comment> | <c_block_comment> ;\n"
+  "\n"
   "c_decl_line       : /[^\\n;]*;/ ;\n"
+  "\n"
   "c_decl_multiline  : /([^;]|\\n)+;/ ;\n"
+  "\n"
   "c_block_open      : /([^{}]|\\n)*\\{/ ;\n"
   "c_block_close     : /[[:space:]]*}[[:space:]]*;?/ ;\n"
   "\n"
@@ -129,6 +137,8 @@ static mpc_parser_t *class_tail;
 static mpc_parser_t *ident_list;
 static mpc_parser_t *class_item;
 static mpc_parser_t *mods_opt;
+static mpc_parser_t *access_kw_opt;
+static mpc_parser_t *storage_kw_opt;
 static mpc_parser_t *member_decl;
 static mpc_parser_t *access_kw;
 static mpc_parser_t *storage_kw;
@@ -182,6 +192,8 @@ static int build_all_parsers(void) {
     ident_list = mpc_new("ident_list");
     class_item = mpc_new("class_item");
     mods_opt = mpc_new("mods_opt");
+    access_kw_opt = mpc_new("access_kw_opt");
+    storage_kw_opt = mpc_new("storage_kw_opt");
     member_decl = mpc_new("member_decl");
     access_kw = mpc_new("access_kw");
     storage_kw = mpc_new("storage_kw");
@@ -221,6 +233,8 @@ static int build_all_parsers(void) {
         ident_list,
         class_item,
         mods_opt,
+        access_kw_opt,
+        storage_kw_opt,
         member_decl,
         access_kw,
         storage_kw,
@@ -244,7 +258,7 @@ static int build_all_parsers(void) {
 }
 
 static void cleanup_all_parsers(void) {
-    mpc_cleanup(37, program
+    mpc_cleanup(39, program
 , decl
 , identifier
 , type_qual
@@ -264,6 +278,8 @@ static void cleanup_all_parsers(void) {
 , ident_list
 , class_item
 , mods_opt
+, access_kw_opt
+, storage_kw_opt
 , member_decl
 , access_kw
 , storage_kw
