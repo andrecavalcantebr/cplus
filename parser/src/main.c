@@ -253,59 +253,62 @@ static int build_all_parsers(void) {
         c_block_close,
         c_chunk,
         NULL);
-    if (err) { mpc_err_print(err); mpc_err_delete(err); return 0; }
+    if (err) {
+        mpc_err_print(err);
+        mpc_err_delete(err);
+        return 0; 
+    }
     return 1;
 }
 
 static void cleanup_all_parsers(void) {
-    mpc_cleanup(39, program
-, decl
-, identifier
-, type_qual
-, type_name
-, generic_args_opt
-, type_list
-, ptr_suffix
-, array_suffix
-, param_void
-, param_list
-, param
-, interface
-, interface_item
-, method_sig
-, class
-, class_tail
-, ident_list
-, class_item
-, mods_opt
-, access_kw_opt
-, storage_kw_opt
-, member_decl
-, access_kw
-, storage_kw
-, member_after_name
-, typedef_class
-, typedef_interface
-, forward_class
-, forward_interface
-, c_pp_line
-, c_line_comment
-, c_block_comment
-, c_comment
-, c_decl_line
-, c_decl_multiline
-, c_block_open
-, c_block_close
-, c_chunk
-);
+    mpc_cleanup(39		, program
+		, decl
+		, identifier
+		, type_qual
+		, type_name
+		, generic_args_opt
+		, type_list
+		, ptr_suffix
+		, array_suffix
+		, param_void
+		, param_list
+		, param
+		, interface
+		, interface_item
+		, method_sig
+		, class
+		, class_tail
+		, ident_list
+		, class_item
+		, mods_opt
+		, access_kw_opt
+		, storage_kw_opt
+		, member_decl
+		, access_kw
+		, storage_kw
+		, member_after_name
+		, typedef_class
+		, typedef_interface
+		, forward_class
+		, forward_interface
+		, c_pp_line
+		, c_line_comment
+		, c_block_comment
+		, c_comment
+		, c_decl_line
+		, c_decl_multiline
+		, c_block_open
+		, c_block_close
+		, c_chunk
+	);
 }
 
 static int parse_source(const char *input_name, const char *source) {
     mpc_result_t r;
     if (mpc_parse(input_name, source, program, &r)) {
         puts("== PARSE SUCCESS ==");
-        // print_program(r.output);
-        mpc_ast_print(r.output);
+        ast_transformation(r.output);
         mpc_ast_delete(r.output);
         return 0;
     } else {

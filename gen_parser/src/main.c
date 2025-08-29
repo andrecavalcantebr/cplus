@@ -416,7 +416,12 @@ static void emit_parser_program(FILE *out, const char *grammar_src, size_t gramm
         fprintf(out, "        %s,\n", rules->v[i]);
     }
     fputs("        NULL);\n", out);
-    fputs("    if (err) { mpc_err_print(err); mpc_err_delete(err); return 0; }\n", out);
+    fputs("    if (err) {\n"
+          "        mpc_err_print(err);\n"
+          "        mpc_err_delete(err);\n"
+          "        return 0; \n"
+          "    }\n",
+          out);
     fputs("    return 1;\n}\n\n", out);
 
     /* cleanup_all_parsers(): mpc_cleanup(N, ...) */
@@ -424,9 +429,9 @@ static void emit_parser_program(FILE *out, const char *grammar_src, size_t gramm
     fprintf(out, "    mpc_cleanup(%zu", rules->n);
     for (size_t i = 0; i < rules->n; ++i)
     {
-        fprintf(out, ", %s\n", rules->v[i]);
+        fprintf(out, "\t\t, %s\n", rules->v[i]);
     }
-    fputs(");\n}\n\n", out);
+    fputs("\t);\n}\n\n", out);
 
     /* parse_source(): uses 'program' rule explicitly */
     fputs(
@@ -434,8 +439,7 @@ static void emit_parser_program(FILE *out, const char *grammar_src, size_t gramm
         "    mpc_result_t r;\n"
         "    if (mpc_parse(input_name, source, program, &r)) {\n"
         "        puts(\"== PARSE SUCCESS ==\");\n"
-        "        // print_program(r.output);\n"
-        "        mpc_ast_print(r.output);\n"
+        "        ast_transformation(r.output);\n"
         "        mpc_ast_delete(r.output);\n"
         "        return 0;\n"
         "    } else {\n"
