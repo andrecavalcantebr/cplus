@@ -13,6 +13,6 @@
 #include <stddef.h>
 #include <mpc.h>
 
-void ast_transformation(mpc_ast_t *ast);
+void ast_transformation(mpc_ast_t *ast, const char *output_dir);
 
 #endif

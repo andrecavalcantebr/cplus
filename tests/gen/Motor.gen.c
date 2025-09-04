@@ -1,5 +1,5 @@
 /*
-	FILE: Motor.gen.c
+	FILE: ./tests/gen/Motor.gen.c
 	DESCRIPTION: public definitions of Motor
 	AUTHOR: Andre Cavalcante
 	DATE: August, 2025

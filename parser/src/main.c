@@ -167,7 +167,8 @@ static void usage(const char *argv0) {
         "Options:\n"
         "  -G          Print the embedded grammar and exit\n"
         "  -f <path>   Parse the given Cplus header/source file\n"
-        "  -x <text>   Parse the given text directly\n",
+        "  -x <text>   Parse the given text directly\n"
+        "  -d <outdir> Directory to write generated C files (default=.)\n",
         argv0, argv0, argv0);
 }
 
@@ -304,11 +305,11 @@ static void cleanup_all_parsers(void) {
 	);
 }
 
-static int parse_source(const char *input_name, const char *source) {
+static int parse_source(const char *input_name, const char *source, const char *output_dir) {
     mpc_result_t r;
     if (mpc_parse(input_name, source, program, &r)) {
         puts("== PARSE SUCCESS ==");
-        ast_transformation(r.output);
+        ast_transformation(r.output, output_dir);
         mpc_ast_delete(r.output);
         return 0;
     } else {
@@ -322,6 +323,7 @@ static int parse_source(const char *input_name, const char *source) {
 int main(int argc, char **argv) {
     const char *file_path = NULL;
     const char *expr_text = NULL;
+    const char *output_dir = ".";
     int print_grammar = 0;
 
     for (int i = 1; i < argc; ++i) {
@@ -333,6 +335,9 @@ int main(int argc, char **argv) {
         } else if (strcmp(argv[i], "-x") == 0) {
             if (i + 1 >= argc) { usage(argv[0]); return 2; }
             expr_text = argv[++i];
+        } else if (strcmp(argv[i], "-d") == 0) {
+            if (i + 1 >= argc) { usage(argv[0]); return 2; }
+            output_dir = argv[++i];
         } else {
             usage(argv[0]);
             return 2;
@@ -346,17 +351,24 @@ int main(int argc, char **argv) {
 
     if (print_grammar) { fputs(GRAMMAR, stdout); return 0; }
 
-    if (!build_all_parsers()) { cleanup_all_parsers(); return 4; }
+    if (!build_all_parsers()) { 
+       cleanup_all_parsers(); 
+       return 4; 
+    }
 
     int rc = 0;
     if (file_path) {
         size_t src_len = 0;
         char *src = slurp(file_path, &src_len);
-        if (!src) { fprintf(stderr, "Failed to read input file: %s\n", file_path); cleanup_all_parsers(); return 5; }
-        rc = parse_source(file_path, src);
+        if (!src) { 
+           fprintf(stderr, "Failed to read input file: %s\n", file_path); 
+           cleanup_all_parsers(); 
+           return 5; 
+        }
+        rc = parse_source(file_path, src, output_dir);
         free(src);
     } else if (expr_text) {
-        rc = parse_source("<cmdline>", expr_text);
+        rc = parse_source("<cmdline>", expr_text, output_dir);
     }
 
     cleanup_all_parsers();

@@ -549,10 +549,10 @@ static char *to_macro(const char *name)
     return m;
 }
 
-static void write_interface_header(const IR_Interface *I)
+static void write_interface_header(const IR_Interface *I, const char *output_dir)
 {
     char path[256];
-    snprintf(path, sizeof path, "%s.h", I->name);
+    snprintf(path, sizeof path, "%s/%s.h", output_dir, I->name);
     FILE *f = fopen(path, "w");
     if (!f)
     {
@@ -583,10 +583,10 @@ static void write_interface_header(const IR_Interface *I)
     fclose(f);
 }
 
-static void write_class_header(const IR_Class *C)
+static void write_class_header(const IR_Class *C, const char *output_dir)
 {
     char path[256];
-    snprintf(path, sizeof path, "%s.gen.h", C->name);
+    snprintf(path, sizeof path, "%s/%s.gen.h", output_dir, C->name);
     FILE *f = fopen(path, "w");
     if (!f)
     {
@@ -640,10 +640,10 @@ static void write_class_header(const IR_Class *C)
     fclose(f);
 }
 
-static void write_class_source(const IR_Class *C)
+static void write_class_source(const IR_Class *C, const char *output_dir)
 {
     char path[256];
-    snprintf(path, sizeof path, "%s.gen.c", C->name);
+    snprintf(path, sizeof path, "%s/%s.gen.c", output_dir, C->name);
     FILE *f = fopen(path, "w");
     if (!f)
     {
@@ -715,7 +715,7 @@ static void write_class_source(const IR_Class *C)
 /* =========================================================================
  * Public entrypoint
  * ========================================================================= */
-void ast_transformation(mpc_ast_t *ast)
+void ast_transformation(mpc_ast_t *ast, const char *output_dir)
 {
     /* Fallback textual path: useful while grammar emits c_chunk */
     char *flat = NULL;
@@ -734,13 +734,13 @@ void ast_transformation(mpc_ast_t *ast)
 
     /* Emit interfaces */
     for (size_t i = 0; i < M.nifaces; i++)
-        write_interface_header(&M.ifaces[i]);
+        write_interface_header(&M.ifaces[i], output_dir);
 
     /* Emit classes (.h/.c) */
     for (size_t i = 0; i < M.nclasses; i++)
     {
-        write_class_header(&M.classes[i]);
-        write_class_source(&M.classes[i]);
+        write_class_header(&M.classes[i], output_dir);
+        write_class_source(&M.classes[i], output_dir);
     }
 
     /* NOTE: frees omitted for MVP; okay for a one-shot CLI. */

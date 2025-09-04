@@ -1,5 +1,5 @@
 /*
-	FILE: IStartable.h
+	FILE: ./tests/gen/IStartable.h
 	DESCRIPTION: public definitions of IStartable
 	AUTHOR: Andre Cavalcante
 	DATE: August, 2025

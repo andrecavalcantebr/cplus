@@ -1,6 +1,6 @@
 # Cplus
 
-Cplus is an experiment over C language. We fall back 30 years and we reedit C with Class.
+Cplus is an experiment over C language. We go back 40 years and we reedit C with Class.
 
 The idea is put OOP syntax directly over standard C23. And... just it. Nothing of templates or
 other "complex stuff" find in C++ and other languages.

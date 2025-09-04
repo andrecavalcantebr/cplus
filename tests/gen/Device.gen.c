@@ -1,5 +1,5 @@
 /*
-	FILE: Device.gen.c
+	FILE: ./tests/gen/Device.gen.c
 	DESCRIPTION: public definitions of Device
 	AUTHOR: Andre Cavalcante
 	DATE: August, 2025
