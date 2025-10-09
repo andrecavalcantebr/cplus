@@ -1,0 +1,154 @@
+=== Running PASSED tests ===
+==== ./tests/passed/00_basic_interface.cplus.h ====
+./tests/passed/00_basic_interface.cplus.h:1:11: error: expected one of ' 	
+', one or more of one of ' 	
+', '/' or '?' at 'P'
+
+==== ./tests/passed/01_interface_params.cplus.h ====
+./tests/passed/01_interface_params.cplus.h:1:11: error: expected one of ' 	
+', one or more of one of ' 	
+', '/' or '?' at 'M'
+
+==== ./tests/passed/02_class_fields_methods_sections.cplus.h ====
+./tests/passed/02_class_fields_methods_sections.cplus.h:1:7: error: expected one of ' 	
+', one or more of one of ' 	
+', '/', '?', "void", "char", "short", "int", "long", "float", "double", "signed", "unsigned", "extern", "class", one or more of "*" or "(" at 'B'
+
+==== ./tests/passed/03_class_members_outside_sections.cplus.h ====
+./tests/passed/03_class_members_outside_sections.cplus.h:1:7: error: expected one of ' 	
+', one or more of one of ' 	
+', '/', '?', "void", "char", "short", "int", "long", "float", "double", "signed", "unsigned", "extern", "class", one or more of "*" or "(" at 'G'
+
+==== ./tests/passed/04_generics_list_map.cplus.h ====
+./tests/passed/04_generics_list_map.cplus.h:1:11: error: expected one of ' 	
+', one or more of one of ' 	
+', '/' or '?' at 'I'
+
+==== ./tests/passed/05_mixed_interfaces_classes.cplus.h ====
+./tests/passed/05_mixed_interfaces_classes.cplus.h:1:11: error: expected one of ' 	
+', one or more of one of ' 	
+', '/' or '?' at 'I'
+
+==== ./tests/passed/06_whitespace_and_comments.cplus.h ====
+./tests/passed/06_whitespace_and_comments.cplus.h:3:11: error: expected one of ' 	
+', one or more of one of ' 	
+', '/' or '?' at 'X'
+
+==== ./tests/passed/07_interface_basic.cplus.h ====
+./tests/passed/07_interface_basic.cplus.h:1:11: error: expected one of ' 	
+', one or more of one of ' 	
+', '/' or '?' at 'I'
+
+==== ./tests/passed/08_class_access_static.cplus.h ====
+./tests/passed/08_class_access_static.cplus.h:1:7: error: expected one of ' 	
+', one or more of one of ' 	
+', '/', '?', "void", "char", "short", "int", "long", "float", "double", "signed", "unsigned", "extern", "class", one or more of "*" or "(" at 'D'
+
+==== ./tests/passed/09_extends_implements.cplus.h ====
+./tests/passed/09_extends_implements.cplus.h:1:11: error: expected one of ' 	
+', one or more of one of ' 	
+', '/' or '?' at 'I'
+
+==== ./tests/passed/10_generics_typename_arrays.cplus.h ====
+./tests/passed/10_generics_typename_arrays.cplus.h:1:11: error: expected one of ' 	
+', one or more of one of ' 	
+', '/' or '?' at 'I'
+
+==== ./tests/passed/11_typedef_class_interface.cplus.h ====
+./tests/passed/11_typedef_class_interface.cplus.h:1:19: error: expected one of ' 	
+', one or more of one of ' 	
+', '/' or '?' at 'I'
+
+==== ./tests/passed/12_forwards_and_use.cplus.h ====
+./tests/passed/12_forwards_and_use.cplus.h:1:11: error: expected one of ' 	
+', one or more of one of ' 	
+', '/' or '?' at 'I'
+
+==== ./tests/passed/13_c_chunk_mixed.cplus.h ====
+./tests/passed/13_c_chunk_mixed.cplus.h:5:12: error: expected one of ' 	
+', one or more of one of ' 	
+', '/', "void", "char", "short", "int", "long", "float", "double", "signed", "unsigned", "extern", "class", '?', one or more of "*" or "(" at 's'
+
+==== ./tests/passed/14_arrays_pointers_mix.cplus.h ====
+./tests/passed/14_arrays_pointers_mix.cplus.h:1:11: error: expected one of ' 	
+', one or more of one of ' 	
+', '/' or '?' at 'I'
+
+==== ./tests/passed/15_c_chunk_blocks.cplus.h ====
+./tests/passed/15_c_chunk_blocks.cplus.h:7:11: error: expected one of ' 	
+', one or more of one of ' 	
+', '/' or '?' at 'I'
+
+==== ./tests/passed/16_c_multiline_decl.cplus.h ====
+./tests/passed/16_c_multiline_decl.cplus.h:4:1: error: expected one of ' 	
+', one or more of one of ' 	
+', '/', "void", "char", "short", "int", "long", "float", "double", "signed", "unsigned", "extern", "class", '?', one or more of "*" or "(" at 'z'
+
+==== ./tests/passed/17_c_close_brace_alone.cplus.h ====
+./tests/passed/17_c_close_brace_alone.cplus.h:3:7: error: expected one of ' 	
+', one or more of one of ' 	
+', '/', '?', "void", "char", "short", "int", "long", "float", "double", "signed", "unsigned", "extern", "class", one or more of "*" or "(" at 'C'
+
+==== ./tests/passed/18_param_array_tiny.cplus.h ====
+./tests/passed/18_param_array_tiny.cplus.h:1:11: error: expected one of ' 	
+', one or more of one of ' 	
+', '/' or '?' at 'I'
+
+==== ./tests/passed/19_empty.cplus.h ====
+== PARSE SUCCESS ==
+
+=== Running FAILED tests ===
+==== ./tests/failed/01_missing_semicolon.cplus.h ====
+./tests/failed/01_missing_semicolon.cplus.h:2:11: error: expected one of ' 	
+', one or more of one of ' 	
+', '/' or '?' at 'I'
+✅ Correctly failed
+
+==== ./tests/failed/02_class_no_brace.cplus.h ====
+./tests/failed/02_class_no_brace.cplus.h:2:7: error: expected one of ' 	
+', one or more of one of ' 	
+', '/', '?', "void", "char", "short", "int", "long", "float", "double", "signed", "unsigned", "extern", "class", one or more of "*" or "(" at 'B'
+✅ Correctly failed
+
+==== ./tests/failed/03_interface_field.cplus.h ====
+./tests/failed/03_interface_field.cplus.h:2:11: error: expected one of ' 	
+', one or more of one of ' 	
+', '/' or '?' at 'I'
+✅ Correctly failed
+
+==== ./tests/failed/04_double_access_modifier.cplus.h ====
+./tests/failed/04_double_access_modifier.cplus.h:2:7: error: expected one of ' 	
+', one or more of one of ' 	
+', '/', '?', "void", "char", "short", "int", "long", "float", "double", "signed", "unsigned", "extern", "class", one or more of "*" or "(" at 'B'
+✅ Correctly failed
+
+==== ./tests/failed/05_bad_generic_syntax.cplus.h ====
+./tests/failed/05_bad_generic_syntax.cplus.h:2:7: error: expected one of ' 	
+', one or more of one of ' 	
+', '/', '?', "void", "char", "short", "int", "long", "float", "double", "signed", "unsigned", "extern", "class", one or more of "*" or "(" at 'V'
+✅ Correctly failed
+
+==== ./tests/failed/06_typedef_wrong.cplus.h ====
+./tests/failed/06_typedef_wrong.cplus.h:2:15: error: expected one of ' 	
+', one or more of one of ' 	
+', '/', '?', "void", "char", "short", "int", "long", "float", "double", "signed", "unsigned", "extern", "class", one or more of "*" or "(" at 'C'
+✅ Correctly failed
+
+==== ./tests/failed/07_class_header_incomplete.cplus.h ====
+./tests/failed/07_class_header_incomplete.cplus.h:1:7: error: expected one of ' 	
+', one or more of one of ' 	
+', '/', '?', "void", "char", "short", "int", "long", "float", "double", "signed", "unsigned", "extern", "class", one or more of "*" or "(" at 'X'
+✅ Correctly failed
+
+==== ./tests/failed/08_typedef_class_missing_name.cplus.h ====
+./tests/failed/08_typedef_class_missing_name.cplus.h:1:15: error: expected one of ' 	
+', one or more of one of ' 	
+', '/', '?', "void", "char", "short", "int", "long", "float", "double", "signed", "unsigned", "extern", "class", one or more of "*" or "(" at 'T'
+✅ Correctly failed
+
+==== ./tests/failed/09_two_access_mods.cplus.h ====
+./tests/failed/09_two_access_mods.cplus.h:1:7: error: expected one of ' 	
+', one or more of one of ' 	
+', '/', '?', "void", "char", "short", "int", "long", "float", "double", "signed", "unsigned", "extern", "class", one or more of "*" or "(" at 'Y'
+✅ Correctly failed
+

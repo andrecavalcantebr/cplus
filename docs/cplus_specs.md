@@ -20,7 +20,7 @@ Defines a class. Does not interfere with the standard C `struct`. To declare a c
 ```java
 class Foo {
     // members declaration
-}
+};
 ```
 
 ### interface
@@ -30,7 +30,7 @@ Defines an interface. An `interface` only has public methods, therefore it does 
 ```java
 interface IFoo {
     // methods declaration
-}
+};
 ```
 
 ### public, protected, private
@@ -42,7 +42,7 @@ class Foo {
     public int f1(Foo *self);
     protected char *getStr(Foo *self);
     private char *msg;
-}
+};
 ```
 
 ### extends
@@ -52,7 +52,7 @@ Used to define the base class in case of inheritance.
 ```java
 class Foo extends Bar {
     // members declaration
-}
+};
 ```
 
 ### implements
@@ -62,7 +62,7 @@ Used to define the set of interfaces implemented by a class.
 ```java
 class Foo implements IClone, IBar {
     // members declaration
-}
+};
 ```
 
 ### as

@@ -1,68 +1,56 @@
 # Cplus – Checkpoint
 
-## Date: August, 2025
+Date: September, 2025
 
-### 🔹 Current Status
+Current focus: C‑first pipeline that desugars `class` into strict, readable C and leaves the rest of the input untouched.
 
-#### Specification
-- `cplus_specs.md` is consolidated.
-- Keywords: `class`, `interface`, `public`, `protected`, `private`.
-- Single inheritance + multiple interfaces supported.
-- Implementation convention:  
-  `type Class_method(Class *self, ...) { ... }`
-- Transpilation confirmed to plain C23.
-- Open points:
-  - Semantics of *generics*.
-  - Rules for `typedef` of classes/interfaces.
+What’s implemented
+- Grammar (docs/grammar.mpc)
+  - C‑like grammar with `class` integrated as a type (similar to `struct`).
+  - Class body supports fields and method prototypes; each member may be prefixed by `public` or `private` (at most one).
+  - Permissive function parameter parsing (balanced parentheses) so `int *p`, `Foo *self` etc. work.
+  - C‑style trailing declarators after a class definition: `class Foo { ... } *p, v;`.
+  - Typedefs: `typedef int T;`, use of typedef names in prototypes and params, and prototypes like `I f(I *p);` handled explicitly.
+  - Forward declaration: `class Foo;`.
 
-#### Grammar (`grammar.mpc`)
-- Base grammar is functional and stable.
-- Main issue: `<c_chunk>` rule
-  - Too permissive → invalid tests **wrongly pass** (e.g., failed/2, 6, 7, 8).
-  - Too strict → breaks valid `passed/` test files.
-- Current trade-off: balancing acceptance of arbitrary C code vs. rejection of invalid Cplus syntax.
+- Transformer (parser/src/ast_transf.c)
+  - Emits:
+    - `typedef struct Foo Foo;`
+    - `struct Foo { /* fields only */ };`
+    - Free function prototypes named `Foo_method(...)` (no implicit self injection).
+  - Strips `public`/`private` from output (semantic checks deferred to Cplus).
+  - Echoes non‑class C code unchanged (preprocessor, declarations, function definitions).
 
-#### Tests
-- Test structure organized into `tests/passed/` and `tests/failed/`.
-- Situation:
-  - `passed/` → all OK (with grammar in “safe” mode).
-  - `failed/` → cases 2, 6, 7, 8 wrongly accepted when `<c_chunk>` is wide.
-- Need to expand **negative test coverage**:
-  - Methods declared outside classes.
-  - Misplaced access specifiers.
-  - Interfaces with fields (should be methods only).
-  - Malformed code blocks.
+Examples (-x)
+- `class Foo{ private int x; int f(int n); } foo;`
+  →
+  ```c
+  typedef struct Foo Foo;
+  struct Foo {
+      int x;
+  };
+  struct Foo foo;
+  int Foo_f(int n);
+  ```
+- `class Bar{ int k; void g(void); } *p, v;`
+  →
+  ```c
+  typedef struct Bar Bar;
+  struct Bar {
+      int k;
+  };
+  struct Bar *p, v;
+  void Bar_g(void);
+  ```
 
-#### Infrastructure
-- `gen_parser` stable (C parser generator from grammar).
-- `parser/` runs automated tests via `./do_tests.sh`.
-- Multi-file integration (`.cp`, `.cp.h`, `.cplus`) not yet supported by automatic `#include` handling.
-- Next step: decide whether transpiler should
-  - (a) Recursively expand `.cp.h` includes, or
-  - (b) Act as an additional pre-processor stage before GCC/Clang.
+Out of scope for this checkpoint
+- Interfaces, inheritance, vtables/RTTI, and access‑rule enforcement (parsing only for `public|private`).
 
----
+Next steps
+- Add `interface` with a similar, explicit mapping to C and disallow instantiation except via pointer.
+- Optional: enforce access rules in a dedicated semantic pass (not in the C output stage).
+- Grow the test corpus around pointer parameters, typedef combinations, and error cases.
 
-### 🔹 Next Steps
-
-1. **Refine `c_chunk`**
-   - Possibly split into `c_chunk_top` (outside classes/interfaces) and `c_chunk_inline` (inside blocks).
-   - Goal: reject invalid Cplus while keeping full flexibility for plain C.
-
-2. **Expand negative tests**
-   - Add explicit failing examples for encapsulation rules, interface misuse, invalid class members, etc.
-
-3. **Update transpiler**
-   - Define preprocessing strategy for multi-file projects.
-   - Document build pipeline.
-
-4. **Documentation**
-   - Keep `Checkpoint.md` updated at each parser/test iteration.
-   - Extend `cplus_specs.md` to cover generics and typedef rules.
-
----
-
-✅ **Summary**  
-The project is stable in its **core features** (classes, interfaces, encapsulation, transpilation to C23).  
-The main blocker is the **`<c_chunk>` rule**, which still requires fine-tuning to differentiate between arbitrary C code and invalid Cplus syntax.  
-
+Notes
+- The output is intended to be compiled by any C23 compiler.
+- Generated identifiers and comments are in English to keep the material universal for teaching.

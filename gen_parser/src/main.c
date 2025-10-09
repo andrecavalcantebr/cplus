@@ -1,17 +1,16 @@
 /*
     FILE: main.c
     DESCR: Code generator for a self-contained Cplus parser (MPC/mpca_lang)
-           Reads a grammar.mpc and emits a C program that embeds the grammar
-           and supports: -G (print grammar), -f <file> (parse file),
-                         -x "<expr>" (parse string)
-           The generated program:
-             - creates all mpc_parser_t* with mpc_new("<rule>")
-             - calls mpca_lang(..., <rules>..., NULL) in the same order
-             - parses input using the 'program' rule
-             - prints AST using print_program() and mpc_ast_print()
-             - cleans up with mpc_cleanup(N, <rules>...)
+           Uses line comments starting with '#' (at column 0) in grammar.mpc.
+           Generates a parser that embeds:
+             - GRAMMAR_RAW (with # comments)
+             - GRAMMAR     (without lines starting with '#')
+           CLI of the generated parser:
+             -G : print grammar with comments (RAW)
+             -f : parse file
+             -x : parse string
     AUTHOR: Andre Cavalcante
-    DATE: August, 2025
+    DATE: September, 2025
     LICENSE: CC BY-SA
 */
 
@@ -82,8 +81,10 @@ static void sv_init(StrVec *sv)
 static int sv_contains(const StrVec *sv, const char *s)
 {
     for (size_t i = 0; i < sv->n; ++i)
+    {
         if (strcmp(sv->v[i], s) == 0)
             return 1;
+    }
     return 0;
 }
 
@@ -114,10 +115,79 @@ static void sv_free(StrVec *sv)
 }
 
 /* ============================================================
- * Grammar parsing: collect nonterminals (rule names) in order
- * Rule format assumed: <rule> : ... ;
- * We find the first ':' outside comments/strings/regex and
- * take the token immediately preceding it, trimming spaces.
+ * Filter: remove lines that start with '#'
+ * - Definition: line starts at column 0 with '#'
+ * - Lines beginning with spaces + '#' are NOT treated as comments
+ *   (by design; keeps rule unambiguous). If you want to allow leading
+ *   spaces, check the first non-space instead.
+ * - We DO NOT preserve removed lines (no newline inserted for them).
+ * ============================================================ */
+/* ============================================================
+ * Filter: remove lines that start with '#'
+ * - Lines beginning with '#' at column 0 are treated as comments.
+ * - In the CLEAN grammar, we replace them with blank lines
+ *   (just a '\n') to preserve line numbering.
+ * ============================================================ */
+static char *filter_hash_comment_lines(const char *src, size_t len, size_t *out_len)
+{
+    char *out = (char *)malloc(len + 1);
+    if (!out)
+    {
+        fprintf(stderr, "OOM in filter_hash_comment_lines\n");
+        return NULL;
+    }
+
+    size_t i = 0, o = 0;
+    while (i < len)
+    {
+        size_t line_start = i;
+        while (i < len && src[i] != '\n')
+            i++;
+        size_t line_end = i; /* points to '\n' or len */
+        int has_nl = (i < len && src[i] == '\n');
+
+        if (line_end > line_start && src[line_start] == '#')
+        {
+            /* emit blank line to preserve numbering */
+            if (has_nl)
+            {
+                out[o++] = '\n';
+                i++; /* consume '\n' */
+            }
+            else
+            {
+                /* last line without newline: just insert one */
+                out[o++] = '\n';
+                i = line_end;
+            }
+            continue;
+        }
+
+        /* copy this line normally */
+        size_t L = line_end - line_start;
+        if (L)
+        {
+            memcpy(out + o, src + line_start, L);
+            o += L;
+        }
+        if (has_nl)
+        {
+            out[o++] = '\n';
+            i++;
+        }
+    }
+
+    out[o] = '\0';
+    if (out_len)
+        *out_len = o;
+    return out;
+}
+
+/* ============================================================
+ * Collect nonterminals (rule names) in order from grammar text
+ * Assumes format: <rule> : ... ;
+ * Finds ':' outside quotes/regex and takes the identifier
+ * immediately before ':'.
  * ============================================================ */
 static int is_ident_start(int c) { return c == '_' || isalpha(c); }
 static int is_ident(int c) { return c == '_' || isalnum(c); }
@@ -127,8 +197,6 @@ static void collect_rules(const char *g, size_t glen, StrVec *rules)
     enum
     {
         NORM,
-        LINE_COMMENT,
-        BLOCK_COMMENT,
         SQ,
         DQ,
         REGEX
@@ -143,46 +211,32 @@ static void collect_rules(const char *g, size_t glen, StrVec *rules)
         switch (st)
         {
         case NORM:
-            if (c == '/')
-            {
-                if (i + 1 < glen && g[i + 1] == '/')
-                {
-                    st = LINE_COMMENT;
-                    i += 2;
-                    break;
-                }
-                if (i + 1 < glen && g[i + 1] == '*')
-                {
-                    st = BLOCK_COMMENT;
-                    i += 2;
-                    break;
-                }
-                st = REGEX;
-                i++;
-                break;
-            }
             if (c == '\'')
             {
                 st = SQ;
                 i++;
                 esc = 0;
-                continue;
+                break;
             }
             if (c == '\"')
             {
                 st = DQ;
                 i++;
                 esc = 0;
-                continue;
+                break;
             }
+            if (c == '/')
+            {
+                st = REGEX;
+                i++;
+                esc = 0;
+                break;
+            } /* MPC regex */
             if (c == ':')
             {
-                /* backtrack to find the identifier before ':' */
                 size_t j = i;
-                /* skip spaces left */
                 while (j > 0 && isspace((unsigned char)g[j - 1]))
                     j--;
-                /* now find start of identifier */
                 size_t k = j;
                 while (k > 0 && is_ident((unsigned char)g[k - 1]))
                     k--;
@@ -196,29 +250,12 @@ static void collect_rules(const char *g, size_t glen, StrVec *rules)
                     free(name);
                 }
                 i++; /* consume ':' */
-                continue;
-            }
-            /* track possible identifiers, not strictly needed here */
-            i++;
-            break;
-
-        case LINE_COMMENT:
-            if (c == '\n')
-                st = NORM;
-            i++;
-            break;
-
-        case BLOCK_COMMENT:
-            if (c == '*' && i + 1 < glen && g[i + 1] == '/')
-            {
-                st = NORM;
-                i += 2;
-                continue;
+                break;
             }
             i++;
             break;
 
-        case SQ: /* single-quoted char literal */
+        case SQ:
             if (!esc && c == '\\')
             {
                 esc = 1;
@@ -235,7 +272,7 @@ static void collect_rules(const char *g, size_t glen, StrVec *rules)
             i++;
             break;
 
-        case DQ: /* double-quoted string literal */
+        case DQ:
             if (!esc && c == '\\')
             {
                 esc = 1;
@@ -252,7 +289,7 @@ static void collect_rules(const char *g, size_t glen, StrVec *rules)
             i++;
             break;
 
-        case REGEX: /* /regex/ */
+        case REGEX:
             if (!esc && c == '\\')
             {
                 esc = 1;
@@ -273,14 +310,12 @@ static void collect_rules(const char *g, size_t glen, StrVec *rules)
 }
 
 /* ============================================================
- * Emit C string literal lines for GRAMMAR
- * Fix: close quotes exactly once; if the last line didn't end
- * with newline, close the open quote at the end.
+ * Emit a C string literal with a given symbol name
  * ============================================================ */
-static void emit_c_string_literal_lines(FILE *out, const char *src, size_t len)
+static void emit_c_string_literal_named(FILE *out, const char *symname,
+                                        const char *src, size_t len)
 {
-    fputs("static const char *GRAMMAR =\n", out);
-
+    fprintf(out, "static const char *%s =\n", symname);
     int open = 0;
     for (size_t i = 0; i < len; ++i)
     {
@@ -290,7 +325,6 @@ static void emit_c_string_literal_lines(FILE *out, const char *src, size_t len)
             fputs("  \"", out);
             open = 1;
         }
-
         switch (c)
         {
         case '\\':
@@ -318,32 +352,31 @@ static void emit_c_string_literal_lines(FILE *out, const char *src, size_t len)
         }
     }
     if (open)
-        fputs("\"\n", out); /* close the last opened quote */
-    fputs(";\n\n", out);    /* ONLY '";\n\n' as requested */
+        fputs("\"\n", out);
+    fputs(";\n\n", out);
 }
 
 /* ============================================================
  * Emit the generated parser program to stdout.
- * The program embeds:
- *  - GRAMMAR
- *  - Rules array: mpc_parser_t* <rule> = mpc_new("<rule>");
- *  - CLI: -G / -f / -x
- *  - Runtime build via mpca_lang(MPCA_LANG_DEFAULT, GRAMMAR, <rules>..., NULL)
- *  - AST printing: print_program() and mpc_ast_print()
- *  - Cleanup: mpc_cleanup(N, <rules>...)
+ * - Embeds GRAMMAR_RAW (with # comments) and GRAMMAR (clean)
+ * - mpca_lang uses GRAMMAR
+ * - -G prints GRAMMAR_RAW
  * ============================================================ */
-static void emit_parser_program(FILE *out, const char *grammar_src, size_t grammar_len, const StrVec *rules)
+static void emit_parser_program(FILE *out,
+                                const char *grammar_src_raw, size_t grammar_len_raw,
+                                const char *grammar_src_clean, size_t grammar_len_clean,
+                                const StrVec *rules)
 {
     /* Header and includes */
     fputs(
         "/*\n"
         "    FILE: parser_generated.c\n"
         "    DESCR: Self-contained Cplus parser (MPC/mpca_lang) with CLI\n"
-        "            -G : print grammar\n"
+        "            -G : print grammar (with # comments)\n"
         "            -f : parse file\n"
         "            -x : parse string\n"
         "    AUTHOR: Generated by gen_parser\n"
-        "    DATE: August, 2025\n"
+        "    DATE: September, 2025\n"
         "    LICENSE: CC BY-SA\n"
         "*/\n"
         "\n"
@@ -374,8 +407,9 @@ static void emit_parser_program(FILE *out, const char *grammar_src, size_t gramm
         "\n",
         out);
 
-    /* Embedded grammar string */
-    emit_c_string_literal_lines(out, grammar_src, grammar_len);
+    /* Embedded grammar strings */
+    emit_c_string_literal_named(out, "GRAMMAR_RAW", grammar_src_raw, grammar_len_raw);
+    emit_c_string_literal_named(out, "GRAMMAR", grammar_src_clean, grammar_len_clean);
 
     /* Declare all parser pointers */
     fputs("/* ============== Parser rules ============== */\n", out);
@@ -395,7 +429,7 @@ static void emit_parser_program(FILE *out, const char *grammar_src, size_t gramm
         "        \"  %s -x \\\"<source>\\\"\\n\"\n"
         "        \"\\n\"\n"
         "        \"Options:\\n\"\n"
-        "        \"  -G          Print the embedded grammar and exit\\n\"\n"
+        "        \"  -G          Print the embedded grammar (with # comments) and exit\\n\"\n"
         "        \"  -f <path>   Parse the given Cplus header/source file\\n\"\n"
         "        \"  -x <text>   Parse the given text directly\\n\"\n"
         "        \"  -d <outdir> Directory to write generated C files (default=.)\\n\",\n"
@@ -404,35 +438,37 @@ static void emit_parser_program(FILE *out, const char *grammar_src, size_t gramm
         out);
 
     /* build_all_parsers(): mpc_new for each, mpca_lang with ...rules..., NULL */
-    fputs(
-        "static int build_all_parsers(void) {\n", out);
+    fputs("static int build_all_parsers(void) {\n", out);
     for (size_t i = 0; i < rules->n; ++i)
     {
         fprintf(out, "    %s = mpc_new(\"%s\");\n", rules->v[i], rules->v[i]);
     }
     fputs("    /* mpca_lang returns mpc_err_t* (NULL on success) */\n", out);
-    fputs("    mpc_err_t *err = mpca_lang(MPCA_LANG_DEFAULT, GRAMMAR,\n", out);
+    /* Use whitespace-sensitive mode; grammar controls spaces via <skips> */
+    fputs("    mpc_err_t *err = mpca_lang(MPCA_LANG_WHITESPACE_SENSITIVE, GRAMMAR,\n", out);
     for (size_t i = 0; i < rules->n; ++i)
     {
         fprintf(out, "        %s,\n", rules->v[i]);
     }
     fputs("        NULL);\n", out);
-    fputs("    if (err) {\n"
-          "        mpc_err_print(err);\n"
-          "        mpc_err_delete(err);\n"
-          "        return 0; \n"
-          "    }\n",
-          out);
-    fputs("    return 1;\n}\n\n", out);
+    fputs(
+        "    if (err) {\n"
+        "        mpc_err_print(err);\n"
+        "        mpc_err_delete(err);\n"
+        "        return 0;\n"
+        "    }\n"
+        "    return 1;\n"
+        "}\n\n",
+        out);
 
     /* cleanup_all_parsers(): mpc_cleanup(N, ...) */
     fputs("static void cleanup_all_parsers(void) {\n", out);
     fprintf(out, "    mpc_cleanup(%zu", rules->n);
     for (size_t i = 0; i < rules->n; ++i)
     {
-        fprintf(out, "\t\t, %s\n", rules->v[i]);
+        fprintf(out, ", %s", rules->v[i]);
     }
-    fputs("\t);\n}\n\n", out);
+    fputs(");\n}\n\n", out);
 
     /* parse_source(): uses 'program' rule explicitly */
     fputs(
@@ -452,7 +488,7 @@ static void emit_parser_program(FILE *out, const char *grammar_src, size_t gramm
         "}\n\n",
         out);
 
-    /* main() */
+    /* main() of the generated parser */
     fputs(
         "int main(int argc, char **argv) {\n"
         "    const char *file_path = NULL;\n"
@@ -483,21 +519,21 @@ static void emit_parser_program(FILE *out, const char *grammar_src, size_t gramm
         "        return 2;\n"
         "    }\n"
         "\n"
-        "    if (print_grammar) { fputs(GRAMMAR, stdout); return 0; }\n"
+        "    if (print_grammar) { fputs(GRAMMAR_RAW, stdout); return 0; }\n"
         "\n"
-        "    if (!build_all_parsers()) { \n"
-        "       cleanup_all_parsers(); \n"
-        "       return 4; \n"
+        "    if (!build_all_parsers()) {\n"
+        "        cleanup_all_parsers();\n"
+        "        return 4;\n"
         "    }\n"
         "\n"
         "    int rc = 0;\n"
         "    if (file_path) {\n"
         "        size_t src_len = 0;\n"
         "        char *src = slurp(file_path, &src_len);\n"
-        "        if (!src) { \n"
-        "           fprintf(stderr, \"Failed to read input file: %s\\n\", file_path); \n"
-        "           cleanup_all_parsers(); \n"
-        "           return 5; \n"
+        "        if (!src) {\n"
+        "            fprintf(stderr, \"Failed to read input file: %s\\n\", file_path);\n"
+        "            cleanup_all_parsers();\n"
+        "            return 5;\n"
         "        }\n"
         "        rc = parse_source(file_path, src, output_dir);\n"
         "        free(src);\n"
@@ -534,31 +570,52 @@ int main(int argc, char **argv)
 
     const char *grammar_path = argv[1];
 
-    size_t grammar_len = 0;
-    char *grammar_src = slurp(grammar_path, &grammar_len);
-    if (!grammar_src)
+    /* Load RAW grammar (with '#' comment lines) */
+    size_t grammar_len_raw = 0;
+    char *grammar_src_raw = slurp(grammar_path, &grammar_len_raw);
+    if (!grammar_src_raw)
     {
         fprintf(stderr, "Failed to read grammar file: %s\n", grammar_path);
         return 3;
     }
 
-    /* Collect rule names in order of appearance */
+    /* Build CLEAN grammar: remove lines starting with '#' */
+    size_t grammar_len_clean = 0;
+    char *grammar_src_clean = filter_hash_comment_lines(grammar_src_raw, grammar_len_raw, &grammar_len_clean);
+    if (!grammar_src_clean)
+    {
+        fprintf(stderr, "Failed to filter # comment lines.\n");
+        free(grammar_src_raw);
+        return 5;
+    }
+
+    //    Uncomment to debug grammars
+    //    printf("GRAMMAR_RAW:\n%s\n\nGRAMMAR CLEAN:\n%s\n\n", grammar_src_raw, grammar_src_clean);
+    //    return 0;
+
+    /* Collect rule names from CLEAN grammar (so commented rules don't count) */
     StrVec rules;
     sv_init(&rules);
-    collect_rules(grammar_src, grammar_len, &rules);
+    collect_rules(grammar_src_clean, grammar_len_clean, &rules);
 
-    /* Sanity: require at least 'program' to exist */
+    /* Require 'program' rule */
     if (!sv_contains(&rules, "program"))
     {
-        fprintf(stderr, "Error: no 'program' rule found in grammar.\n");
+        fprintf(stderr, "Error: no 'program' rule found in grammar (after removing # comment lines).\n");
         sv_free(&rules);
-        free(grammar_src);
+        free(grammar_src_clean);
+        free(grammar_src_raw);
         return 4;
     }
 
-    emit_parser_program(stdout, grammar_src, grammar_len, &rules);
+    /* Emit generated parser source to stdout */
+    emit_parser_program(stdout,
+                        grammar_src_raw, grammar_len_raw,
+                        grammar_src_clean, grammar_len_clean,
+                        &rules);
 
     sv_free(&rules);
-    free(grammar_src);
+    free(grammar_src_clean);
+    free(grammar_src_raw);
     return 0;
 }

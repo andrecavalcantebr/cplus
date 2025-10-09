@@ -1,79 +1,181 @@
-program           : /^/ <decl>* /$/ ;
+#######################################################################
+# C-like grammar with Cplus 'class' integrated as a C type
+# - Accepts ordinary C decls/funcs/preprocessor
+# - Adds 'class' as a type introducer (like 'struct') and 'class' declarations
+# - Class body allows fields and method prototypes (no definitions)
+#######################################################################
 
-decl              : <typedef_class>
-                  | <typedef_interface>
-                  | <forward_class>
-                  | <forward_interface>
-                  | <interface>
-                  | <class>
-                  | <c_chunk> ;
+# ---------- Lexical ----------
+ws             : /[ \t\r\n]+/ ;
+line_comment   : /\/\/[^\n]*/ ;
+block_comment  : /\/\*([^*]|\*+[^*\/])*\*+\// ;
+comment        : <line_comment> | <block_comment> ;
+skips          : (<ws> | <comment>)* ;
 
-identifier        : /[A-Za-z_][A-Za-z0-9_]*/ ;
+ident          : /[A-Za-z_][A-Za-z0-9_]*/ ;
+number         : /0[xX][0-9A-Fa-f]+/ | /[0-9]+(\.[0-9]*)?([eE][\+\-]?[0-9]+)?/ ;
+char_lit       : /'([^'\\]|\\.)'/ ;
+str_lit        : /\"([^\"\\]|\\.)*\"/ ;
 
-type_qual         : "const" | "volatile" | "restrict" ;
+pp_line        : /#[^\n]*/ ;
 
-type_name         : <type_qual>* <identifier> <generic_args_opt> <ptr_suffix> ;
-generic_args_opt  : ("<" <type_list> ">")? ;
-type_list         : <type_name> ("," <type_name>)* ;
-ptr_suffix        : ("*")* ;
-array_suffix      : ("[" /[0-9]*/ "]")* ;
+lparen         : "(" ;
+rparen         : ")" ;
+lbrace         : "{" ;
+rbrace         : "}" ;
+lbrack         : "[" ;
+rbrack         : "]" ;
+comma          : "," ;
+semi           : ";" ;
+colon          : ":" ;
 
-param_void        : "void" ;
+# ---------- Minimal expressions/statements (enough for function bodies) ----------
+assign_op_tok  : "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>=" | "&=" | "^=" | "|=" ;
 
-param_list        : (<param_void> | <param> ("," <param>)*)? ;
-param             : <type_name> <identifier> <array_suffix> ;
+op_infix_mul   : "*" | "/" | "%" ;
+op_infix_add   : "+" | "-" ;
+op_infix_shift : "<<" | ">>" ;
+op_infix_rel   : "<" | ">" | "<=" | ">=" ;
+op_infix_eq    : "==" | "!=" ;
+op_infix_band  : "&" ;
+op_infix_bxor  : "^" ;
+op_infix_bor   : "|" ;
+op_infix_land  : "&&" ;
+op_infix_lor   : "||" ;
 
-interface         : "interface" <identifier> <generic_args_opt> "{" <interface_item>* "}" (";")? ;
-interface_item    : <method_sig> ";" | <c_comment> ;
-method_sig        : <type_name> <identifier> "(" <param_list> ")" ;
+op_prefix      : "++" | "--" | "!" | "~" | "+" | "-" | "*" | "&" ;
+op_postfix     : "++" | "--" ;
 
-class             : "class" <identifier> <generic_args_opt> <class_tail> "{" <class_item>* "}" (";")? ;
-class_tail        : ("extends" <identifier>)? ("implements" <ident_list>)? ;
-ident_list        : <identifier> ("," <identifier>)* ;
+kw_return      : "return" ;
 
-class_item        : <member_decl> | <c_comment> | <c_pp_line> ;
+primary        : <skips> ( <ident> | <number> | <char_lit> | <str_lit> | <lparen> <skips> <expr> <skips> <rparen> ) ;
+arglist_opt    : ( <arglist> )? ;
+arglist        : <skips> <assign> ( <skips> <comma> <skips> <assign> )* ;
+postfix_core   : <primary>
+                 ( <skips> <lparen> <skips> <arglist_opt> <skips> <rparen>
+                 | <skips> <lbrack> <skips> <expr> <skips> <rbrack>
+                 | <skips> "." <skips> <ident>
+                 | <skips> "->" <skips> <ident>
+                 )* ;
+postfix        : <postfix_core> ( <skips> <op_postfix> )* ;
+unary          : ( <skips> <op_prefix> )+ <skips> <unary> | <postfix> ;
+mul            : <unary> ( <skips> <op_infix_mul> <skips> <unary> )* ;
+add            : <mul>   ( <skips> <op_infix_add> <skips> <mul>   )* ;
+shift          : <add>   ( <skips> <op_infix_shift> <skips> <add> )* ;
+rel            : <shift> ( <skips> <op_infix_rel>   <skips> <shift> )* ;
+eq             : <rel>   ( <skips> <op_infix_eq>    <skips> <rel>   )* ;
+band           : <eq>    ( <skips> <op_infix_band>  <skips> <eq>    )* ;
+bxor           : <band>  ( <skips> <op_infix_bxor>  <skips> <band>  )* ;
+bor            : <bxor>  ( <skips> <op_infix_bor>   <skips> <bxor>  )* ;
+land           : <bor>   ( <skips> <op_infix_land>  <skips> <bor>   )* ;
+lor            : <land>  ( <skips> <op_infix_lor>   <skips> <land>  )* ;
 
-mods_opt         : ( <access_kw> <storage_kw_opt> )
-                 | ( <storage_kw> <access_kw_opt> )
-                 | ( <access_kw> )
-                 | ( <storage_kw> ) ;
+assign         : ( <skips> <postfix_core> <skips> <assign_op_tok> <skips> <assign> ) | <lor> ;
+expr           : <assign> ( <skips> <comma> <skips> <assign> )* ;
 
-access_kw_opt    : (<access_kw>)? ;
-storage_kw_opt   : (<storage_kw>)? ;
+compound       : <skips> <lbrace> <skips> ( <stmt> )* <skips> <rbrace> ;
+stmt           : <skips> <semi>
+               | <skips> <kw_return> <skips> ( <expr> )? <skips> <semi>
+               | <skips> <expr> <skips> <semi>
+               | <compound> ;
 
-member_decl      : <mods_opt> <type_name> <identifier> <member_after_name> | <type_name> <identifier> <member_after_name> ;
+# ---------- Raw balanced (for permissive function prototypes) ----------
+raw_block      : <lbrace> <raw_inside>* <rbrace> ;
+raw_paren      : <lparen> <raw_inside>* <rparen> ;
+raw_inside     : <raw_block>
+               | <raw_paren>
+               | <str_lit>
+               | <char_lit>
+               | <comment>
+               | /[^{}()\"'\/]+/
+               | "/" ;
 
-access_kw        : "public" | "protected" | "private" ;
-storage_kw       : "static" ;
+# ---------- Types & declarators ----------
+kw_void        : "void" ;
+kw_char        : "char" ;
+kw_short       : "short" ;
+kw_int         : "int" ;
+kw_long        : "long" ;
+kw_float       : "float" ;
+kw_double      : "double" ;
+kw_signed      : "signed" ;
+kw_unsigned    : "unsigned" ;
+kw_struct      : "struct" ;
+kw_class       : "class" ;
+kw_extern      : "extern" ;
+kw_typedef     : "typedef" ;
+kw_public      : "public" ;
+kw_private     : "private" ;
 
-member_after_name : "(" <param_list> ")" ";" 
-                    | <array_suffix> ";"      
-                    | ";" ;               
+type_qualifier : "const" | "volatile" | "restrict" ;
+qualifiers     : ( <type_qualifier> <skips> )+ ;
 
-typedef_class     : "typedef" "class" <identifier> <class_tail>
-                    "{" <class_item>* "}" <identifier> ";" ;
+pointer        : ( "*" ( <skips> ( <qualifiers> <skips> )? )? )+ ;
 
-typedef_interface : "typedef" "interface" <identifier>
-                    "{" <interface_item>* "}" <identifier> ";" ;
+class_type     : <kw_class> <skips> <ident> ;
+struct_type    : <kw_struct> <skips> <ident> ;
 
-forward_class     : "class" <identifier> ";" ;
-forward_interface : "interface" <identifier> ";" ;
+type_kw        : <kw_void> | <kw_char> | <kw_short> | <kw_int> | <kw_long> | <kw_float> | <kw_double> | <kw_signed> | <kw_unsigned> | <kw_extern> ;
+type_ident_no_paren   : <ident> !( <skips> <lparen> ) ;
+type_spec_atom        : <type_kw> | <class_type> | <struct_type> | <type_ident_no_paren> ;
+type_spec_atom_noid   : <kw_void> | <kw_char> | <kw_short> | <kw_int> | <kw_long> | <kw_float> | <kw_double> | <kw_signed> | <kw_unsigned> | <class_type> | <struct_type> ;
+type_spec             : <skips> ( <type_spec_atom> <skips> )+ ;
+type_spec_no_ident    : <skips> ( <type_spec_atom_noid> <skips> )+ ;
 
-c_pp_line         : /#[^\n]*/ ;
-c_line_comment    : /\/\/[^\n]*/ ;
-c_block_comment   : /\/\*([^*]|\*+[^*\/])*\*+\// ;
-c_comment         : <c_line_comment> | <c_block_comment> ;
+# For raw function prototypes, be specific to avoid swallowing the function name
+type_spec_basic       : <skips> ( <type_spec_atom_noid> <skips> )+ ;
+typedef_type_name     : <type_ident_no_paren> ;
+type_spec_for_proto   : <type_spec_basic>
+                      | <typedef_type_name> ;
 
-c_decl_line       : /[^\n;]*;/ ;
+declarator     : <skips> ( <pointer> <skips> )? <direct_decl> ;
+paren_content_any : /[^)]*/ ;
 
-c_decl_multiline  : /([^;]|\n)+;/ ;
+direct_decl    : <skips> ( <ident>
+                 | <pointer> <skips> <ident>
+                 | <lparen> <skips> <declarator> <skips> <rparen> )
+                 ( <skips> <lparen> <skips> <paren_content_any> <rparen>
+                 | <skips> <lbrack> <skips> ( <expr> )? <skips> <rbrack>
+                 )* ;
 
-c_block_open      : /([^{}]|\n)*\{/ ;
-c_block_close     : /[[:space:]]*}[[:space:]]*;?/ ;
+param_decl     : <skips> <type_spec> ( <skips> "*" )* <skips> <ident>
+               | <skips> <type_spec> <skips> <declarator> ;
+param_list     : <skips> <param_decl> ( <skips> <comma> <skips> <param_decl> )* ;
 
-c_chunk           : <c_pp_line>
-                  | <c_comment>
-                  | <c_decl_line>
-                  | <c_decl_multiline>
-                  | <c_block_open>
-                  | <c_block_close> ;
+initializer    : <skips> "=" <skips> <expr> ;
+init_decl      : <skips> <declarator> <skips> ( <initializer> )? ;
+
+c_decl         : <skips> <type_spec> <skips> <init_decl> ( <skips> <comma> <skips> <init_decl> )* <skips> <semi> ;
+c_funcdef      : <skips> <type_spec> <skips> <declarator> <skips> <compound> ;
+typedef_decl   : <skips> <kw_typedef> <skips> <type_spec_no_ident> <skips> <init_decl>
+                 ( <skips> <comma> <skips> <init_decl> )* <skips> <semi> ;
+c_funcproto_raw: <skips> <type_spec_for_proto> <skips> <ident> <skips> <raw_paren> <skips> <semi> ;
+# prototype using typedef-name as the only type token (fallback)
+c_funcproto_two_ident: <skips> <ident> <skips> <ident> <skips> <raw_paren> <skips> <semi> ;
+
+# ---------- Class declaration ----------
+access_opt          : ( <skips> ( <kw_public> | <kw_private> ) <skips> )? ;
+class_field_decl    : <skips> <access_opt> <type_spec> <skips> <init_decl>
+                      ( <skips> <comma> <skips> <init_decl> )* <skips> <semi> ;
+class_method_decl   : <skips> <access_opt> <type_spec> <skips> <ident> <skips>
+                      <lparen> <skips> /[^)]*/ <rparen> <skips> <semi> ;
+class_body_item    : <skips> ( <class_method_decl> | <class_field_decl> | <pp_line> ) ;
+class_header       : <skips> <kw_class> <skips> <ident> <skips> ;
+class_decl         : <class_header> <lbrace> <skips> ( <class_body_item> )* <skips> <rbrace>
+                     <skips> ( <init_decl> ( <skips> <comma> <skips> <init_decl> )* )? <skips> <semi> ;
+forward_class      : <skips> <kw_class> <skips> <ident> <skips> <semi> ;
+
+# ---------- Top-level ----------
+top_item       : <skips> ( <class_decl>
+                         | <forward_class>
+                         | <pp_line>
+                         | <c_funcproto_raw>
+                         | <c_funcproto_two_ident>
+                         | <typedef_decl>
+                         | <c_funcdef>
+                         | <c_decl>
+                         | <stmt>
+                         ) ;
+
+unit           : <skips> ( <top_item> )* ;
+program        : /^/ <unit> /$/ ;

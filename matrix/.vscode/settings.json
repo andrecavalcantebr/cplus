@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.cp": "c",
+        "matrix.h": "c",
+        "tgc.h": "c"
+    }
+}

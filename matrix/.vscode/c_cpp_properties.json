@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/vendor/tgc"
+            ],
+            "defines": [],
+            "intelliSenseMode": "linux-clang-x64"
+        }
+    ],
+    "version": 4
+}
