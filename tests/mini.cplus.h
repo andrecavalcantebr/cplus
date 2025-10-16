@@ -1,7 +1,21 @@
-interface X { 
-    void a(); 
+class Foo
+{
+private
+    int x;
+public
+    int get(Foo_ref self);
+public
+    void set(Foo_ref self, int val);
 };
 
-class Y { 
-    public void b(); 
-};
+public
+int get(Foo_ref self)
+{
+    return self->x;
+}
+
+public
+void set(Foo_ref self, int val)
+{
+    self->x = val;
+}

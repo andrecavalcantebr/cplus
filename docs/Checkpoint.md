@@ -1,6 +1,36 @@
-# Cplus – Checkpoint
+# Checkpoint – October, 2025
 
-Date: September, 2025
+## Dual Typedef Model for Classes
+
+Each class now emits two typedefs:
+
+```c
+typedef struct Foo Foo;
+typedef Foo Foo_ref[1];
+```
+
+### Features
+
+* **Stack semantics:** `Foo_ref` acts as an implicit reference (decays to pointer).
+* **Heap semantics:** `Foo*` remains an explicit pointer.
+* **C compatibility:** fully standard, valid in any C23 compiler.
+
+### Behavior Summary
+
+| Category    | Stack object               | Heap object               |
+| ----------- | -------------------------- | ------------------------- |
+| Declaration | `Foo_ref a;`               | `Foo *p = new(Foo, ...);` |
+| Call        | `a.method()`               | `p->method()`             |
+| Lifetime    | automatic                  | manual (`del(p)`)         |
+| Conversion  | `Foo_ref` → `Foo*` (decay) | direct                    |
+
+### Buffers and Copies
+
+* A buffer of `Foo*` can store both stack (`Foo_ref`) and heap (`Foo*`) addresses.
+* A buffer of copies (`buffer_add_copy`) duplicates the struct contents on the heap.
+* Stack objects can safely be copied without becoming heap objects.
+
+# Cplus – Checkpoint - September, 2025
 
 Current focus: C‑first pipeline that desugars `class` into strict, readable C and leaves the rest of the input untouched.
 

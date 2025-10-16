@@ -1,6 +1,6 @@
 # Cplus
 
-Cplus is an educational experiment over the C language. We “re‑edit” C by adding a minimal `class` syntax and keep everything else as plain C23. No templates and no complex machinery — the goal is to show “what happens under the hood”.
+Cplus is an educational experiment over the C language. We “re‑edit C with Class" by adding a minimal `class` syntax and keep everything else as plain C23. No templates and no complex machinery — the goal is to show “what happens under the hood”.
 
 Core idea
 - Parse `class` syntax and transpile it to readable C:
@@ -12,7 +12,7 @@ Core idea
 
 Design principles
 - Output must compile as strict C (C23).
-- No hidden `self`: if you want object context, write `Foo *self` explicitly.
+- No hidden `self`: if you want object context, write `Foo *self` explicitly (or `Foo_ref self`).
 - Keep everything explicit and reversible for didactic purposes.
 
 What works now
@@ -120,6 +120,52 @@ Notes
   ./do_tests.sh -h         # help
   ```
   The script feeds files from `tests/passed/` and `tests/failed/` to `parser/parser` and prints whether each one parses successfully (or fails when it should).
+
+## Memory Model (October 2025)
+
+Each class produces two typedefs:
+
+```c
+typedef struct Foo Foo;
+typedef Foo Foo_ref[1];
+```
+
+### Stack-based Objects
+
+```c
+Foo_ref a;
+Foo_init(a, 5);
+a.set(10); // -> Foo_set(a, 10);
+```
+
+### Heap-based Objects
+
+```c
+Foo *b = new(Foo, 10);
+b->set(20);
+del(b);
+```
+
+### Buffers
+
+Store both stack and heap references:
+
+```c
+buffer_add(&buf, a);
+buffer_add(&buf, b);
+```
+
+For independent copies:
+
+```c
+buffer_add_copy(&buf, a);
+```
+
+### Compiler Responsibilities
+
+- **Cplus transpiler:** handles high-level OO semantics (`new`, `del`, method syntax).
+- **C compiler:** validates pointer types and array decay.
+- `Foo_ref*` is valid for collections and buffers.
 
 ## Baseline
 

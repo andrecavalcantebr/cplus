@@ -195,7 +195,7 @@ Checked by the transpiler; generated C just performs a simple cast.
 
 # Files and Separation
 
-* `.h` → `class` + method declarations.  
+* `.hp` → `class` + method declarations.  
 * `.cp` → implementations.  
 
 Allows composition of multiple files following standard C practices.  
@@ -220,6 +220,71 @@ Allows composition of multiple files following standard C practices.
 * `Class_method` for normal methods.  
 * `Class__sys_init`, `Class__sys_deinit` are generated automatically.  
 * Virtual methods in the vtable use fixed signatures for the class. 
+
+---
+# Cplus Specification (October 2025)
+
+## Memory Model
+
+### Stack Objects
+
+Each class defines two types:
+
+```c
+typedef struct Foo Foo;
+typedef Foo Foo_ref[1];
+```
+
+* `Foo_ref` is an array of one struct; it decays to `Foo*` when passed to a function.
+* Provides implicit by-reference semantics without explicit `&`.
+
+### Heap Objects
+
+```c
+Foo *p = new(Foo, 10);
+p->set(20);
+del(p);
+```
+
+Expands to:
+
+```c
+Foo *p = (Foo*)cplus_new(sizeof(Foo));
+Foo_set(p, 20);
+cplus_del(p);
+```
+
+### Buffers
+
+Buffers of `Foo*` can store both stack and heap addresses:
+
+```c
+buffer_add(&buf, a);  // stack
+buffer_add(&buf, b);  // heap
+```
+
+Cplus also supports buffers that **copy** object contents:
+
+```c
+buffer_add_copy(&buf, a);
+```
+
+### new / del Macros
+
+```c
+#define new(T, ...) ((T*) cplus_new(sizeof(T), ##__VA_ARGS__))
+#define del(p)      cplus_del(p)
+```
+
+### Semantic Rules
+
+| Rule                   | Action                     | Detected by |
+| ---------------------- | -------------------------- | ----------- |
+| `new` on `Foo_ref`     | error                      | transpiler  |
+| `del` on `Foo_ref`     | error                      | transpiler  |
+| `Foo_ref*` use         | allowed (optional warning) | transpiler  |
+| `a->method()` on stack | error                      | transpiler  |
+| `a.method()` on heap   | error                      | transpiler  |
 
 ---
 
