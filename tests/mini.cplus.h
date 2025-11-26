@@ -8,13 +8,11 @@ public
     void set(Foo_ref self, int val);
 };
 
-public
-int get(Foo_ref self)
+int Foo_get(Foo_ref self)
 {
     return self->x;
 }
 
-public
 void set(Foo_ref self, int val)
 {
     self->x = val;
