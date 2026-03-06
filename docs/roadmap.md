@@ -23,11 +23,13 @@ A feature/version is only complete when all **Definition of Done (DoD)** items a
 ## v1 — `C23 -> C23` (Identity Transpiler)
 
 ### Scope
+
 - Parse and validate C23 input.
 - Regenerate equivalent C23 output.
 - No language extension yet.
 
 ### DoD
+
 - [ ] CLI accepts input file and emits output file.
 - [ ] Syntax errors are reported with file/line/column.
 - [ ] Golden tests cover valid and invalid C23 samples.
@@ -40,10 +42,12 @@ A feature/version is only complete when all **Definition of Done (DoD)** items a
 ## v2 — `cplus (small new statements) -> C23`
 
 ### Scope
+
 - Introduce a first minimal extension set.
 - Keep transformation rules explicit and simple.
 
 ### DoD
+
 - [ ] Grammar for each new statement is documented.
 - [ ] Semantic rules are documented with examples.
 - [ ] Lowering rules are deterministic (no hidden heuristics).
@@ -55,10 +59,12 @@ A feature/version is only complete when all **Definition of Done (DoD)** items a
 ## v3 — `cplus (more elaborate statements) -> C23`
 
 ### Scope
+
 - Add structured advanced statements (e.g., RAII/resource patterns).
 - Handle nested constructs safely.
 
 ### DoD
+
 - [ ] Control-flow interactions are specified (`break`, `continue`, `return`, `goto`).
 - [ ] Nested lowering is validated with dedicated tests.
 - [ ] Error messages explain invalid control flow clearly.
@@ -70,10 +76,12 @@ A feature/version is only complete when all **Definition of Done (DoD)** items a
 ## v4 — `cplus (additional small statements) -> C23`
 
 ### Scope
+
 - Add second wave of lightweight syntax features.
 - Improve consistency and ergonomics.
 
 ### DoD
+
 - [ ] New features do not introduce ambiguity with existing grammar.
 - [ ] Existing code remains backward compatible (or migration is documented).
 - [ ] Tests include mixed usage with previous versions' features.
@@ -84,10 +92,12 @@ A feature/version is only complete when all **Definition of Done (DoD)** items a
 ## v5+ — `cplus (OO syntax) -> C23`
 
 ### Scope
+
 - Introduce object-oriented syntax (classes and related features).
 - Keep generated C educational and explicit.
 
 ### DoD
+
 - [ ] OO syntax and semantics are formally specified.
 - [ ] Lowering model to C structs/functions is documented.
 - [ ] Lifecycle model (RAII/smart pointers) is defined and tested.
