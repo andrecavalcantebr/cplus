@@ -1,0 +1,45 @@
+# Build directories
+/build/
+/cmake-build-*/
+
+# CMake generated files
+/CMakeCache.txt
+/CMakeFiles/
+/Makefile
+/cmake_install.cmake
+/install_manifest.txt
+/CTestTestfile.cmake
+/Testing/
+
+# Optional: keep if you do not want to version IDE/tooling DB
+# /compile_commands.json
+
+# Binary artifacts
+*.o
+*.obj
+*.a
+*.so
+*.so.*
+*.dll
+*.dylib
+*.exe
+*.out
+
+# Debug/profiling artifacts
+*.dSYM/
+*.gcda
+*.gcno
+*.prof
+*.profraw
+*.profdata
+
+# Temporary/editor files
+*~
+*.swp
+*.swo
+.DS_Store
+
+# Generated deploy folders (if produced by build scripts)
+# Uncomment if these are always generated, not manually maintained:
+# /inc/
+# /lib/
