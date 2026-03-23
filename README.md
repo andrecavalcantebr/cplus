@@ -20,6 +20,7 @@ The old code (MPC based) was archived in a historic branch/tag.
 - Evolve in small, testable steps.
 - Validate with GCC first, then Clang.
 - Prefer explicit semantics over heuristics.
+- `.hplus` / `.cplus` are source; `.h` / `.c` are generated artefacts — never edit generated files.
 
 ## Roadmap
 
@@ -53,8 +54,9 @@ ctest --test-dir build --output-on-failure
 ## Directory layout
 
 - `docs/` documentation
-- `src/` project sources
+- `src/` project sources (transpiler itself, in C)
 - `tests/` automated tests
+- `examples/` `.hplus` / `.cplus` source examples and their generated `.h` / `.c` artefacts
 - `vendor/` third-party sources
 - `inc/` deployed/generated/third-party headers
 - `lib/` deployed/generated/third-party libraries

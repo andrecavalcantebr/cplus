@@ -24,9 +24,10 @@ A feature/version is only complete when all **Definition of Done (DoD)** items a
 
 ### Scope
 
+- Establish the `.cplus` / `.hplus` source file convention.
 - Parse and validate C23 input.
-- Regenerate equivalent C23 output.
-- No language extension yet.
+- Regenerate equivalent C23 output (`.c` / `.h` artefacts).
+- No language extension yet — v1 sources are valid C23.
 
 ### DoD
 
