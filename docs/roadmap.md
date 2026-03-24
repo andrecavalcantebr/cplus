@@ -35,8 +35,8 @@ A feature/version is only complete when all **Definition of Done (DoD)** items a
 - [x] Syntax errors are reported with file/line/column.
 - [x] Golden tests cover valid and invalid C23 samples.
 - [x] Output compiles with GCC.
-- [ ] Output compiles with Clang.
-- [ ] Basic architecture documented (parser/AST/lowering/diagnostics).
+- [x] Output compiles with Clang.
+- [x] Basic architecture documented (parser/AST/lowering/diagnostics).
 
 ---
 

@@ -95,8 +95,17 @@ if(CPLUS_BUILD_TESTS)
         "${CMAKE_SOURCE_DIR}/tests/*.c"
     )
 
+    # Clang-specific tests are registered only when clang is available
+    find_program(CLANG_EXECUTABLE clang)
+
     foreach(test_src IN LISTS CPLUS_TEST_SRC)
         get_filename_component(test_name "${test_src}" NAME_WE)
+
+        # Skip clang tests if clang is not found
+        if(test_name MATCHES "_clang$" AND NOT CLANG_EXECUTABLE)
+            message(STATUS "clang not found — skipping ${test_name}")
+            continue()
+        endif()
 
         add_executable("${test_name}" "${test_src}")
         target_link_libraries("${test_name}" PRIVATE cplus_core)

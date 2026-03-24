@@ -44,11 +44,77 @@ generated `.h` equivalents, so the C world only ever sees standard `.h` files.
 
 ## Modules
 
-- `driver`: CLI parsing and orchestration
-- `io`: file read/write utilities
-- `validator`: compiler invocation and status parsing
-- `diagnostics`: normalized error model and printing
-- `pipeline`: high-level workflow API
+### `driver` (src/main.c)
+
+CLI parsing and orchestration. Reads `argc/argv`, builds a `PipelineOptions`
+struct, calls `pipeline_run()`, and maps the return code to process exit status.
+
+### `pipeline` (src/pipeline.c)
+
+High-level workflow: loads the source file, delegates to `compiler_validator`,
+and on success copies the input verbatim to the output path (identity transform).
+Returns 0 on success, 1 on validation failure, -1 on I/O error.
+
+### `compiler_validator` (src/compiler_validator.c)
+
+Invokes `gcc` or `clang` with `-x c -std=<std> -fsyntax-only` via `system(3)`,
+captures combined stdout/stderr to a temp file, and returns the raw output plus
+the compiler exit status. Contains a GCC version shim: `gcc -std=c23` is
+rewritten to `gcc -std=c2x` for GCC < 14 (detected at runtime via
+`gcc -dumpversion`).
+
+### `diagnostics` (src/diagnostics.c)
+
+Parses raw compiler output (GCC or Clang) into a structured `DiagnosticList`.
+
+**Data model:**
+
+```c
+typedef enum { DIAG_ERROR, DIAG_WARNING, DIAG_NOTE } DiagnosticSeverity;
+
+typedef struct {
+    char*              file;      /* owned, heap-allocated */
+    int                line;
+    int                column;
+    DiagnosticSeverity severity;
+    char*              message;   /* owned */
+    char*              context;   /* caret + source snippet, or NULL */
+} Diagnostic;
+
+typedef struct {
+    Diagnostic* items;
+    size_t      count;
+    size_t      capacity;
+} DiagnosticList;
+```
+
+**Parser design:**
+
+- Walks the raw output by pointer (`const char *p`) without fixed buffers or
+  intermediate copies; no `strtok`/`strtok_r` is used.
+- Each line is delimited as `[line_start, line_end)` — NUL is never assumed at
+  `line_end`.
+- `try_parse_primary()` matches lines of the form
+  `<file>:<line>:<col>: <severity>: <message>` using only pointer arithmetic
+  and `strtol`.
+- Lines that do not match the primary pattern are collected into the `context`
+  field of the preceding `Diagnostic` (caret markers, source snippets) via a
+  dynamic `append_line()` helper that doubles its buffer as needed.
+- Owned strings are built with `strndup` / `strdup`, which are standard C23
+  (ISO/IEC 9899:2024 §7.27.6) — no `_POSIX_C_SOURCE` feature-test macro is
+  required.
+
+**Memory contract:**
+
+- `diagnostics_parse()` returns a fully-owned list; caller must call
+  `diagnostics_free_list()`.
+- `diagnostics_free_list()` frees every `file`, `message`, and `context` string,
+  then the `items` array.
+
+### `io` (inline in pipeline.c, v1)
+
+File read/write utilities embedded in the pipeline for v1. Will be extracted to
+a dedicated module in v2 when source mapping requires richer I/O.
 
 ## Non-goals (v1)
 
