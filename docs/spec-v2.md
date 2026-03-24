@@ -37,10 +37,17 @@ weak T *name;
 weak T *name = expr;
 ```
 
+`weak` is optional. An unqualified pointer (`T *name`) is implicitly `weak` —
+no ownership, no cleanup. `weak` may be written explicitly as documentation.
+
 ### Semantics
 
 `weak` declares a plain non-owning pointer. The programmer asserts that this
 pointer does not own the pointed-to resource. No cleanup is generated.
+
+Unqualified pointers in all contexts (parameters, return types, struct fields,
+local variables) are equivalent to `weak` and are not an error. This preserves
+full backward compatibility with v1 and with C23 code.
 
 ### Lowering
 
@@ -56,6 +63,7 @@ T *name = expr;
 - Any pointer type is allowed.
 - `weak` may appear in any scope (file, function, block).
 - No restriction on use, assignment, or passing as argument.
+- An unqualified pointer is implicitly `weak` — no transpile-time error.
 
 ---
 
@@ -205,9 +213,15 @@ fn(p);           /* OK   : passing as argument is a non-owning use */
 
 - Any assignment `T *lhs = unique_rhs` where `lhs` is not declared `unique` is
   a transpile-time error.
-- Passing a `unique` pointer as a function argument (`fn(p)`) is allowed.
-- Passing the address of a `unique` pointer (`fn(&p)`) is allowed and is the
-  conventional way to transfer ownership through a function parameter.
+- Passing a `unique` pointer as a function argument (`fn(p)`) is allowed — the
+  function receives a copy of the address (non-owning use). The `unique`
+  variable retains ownership; the cleanup fires at the end of its scope.
+- Passing the address of a `unique` pointer (`fn(&p)`) is allowed. This is
+  **not** a `move` — the transpiler does not infer ownership transfer from
+  `&p`. The called function may or may not zero `*pp`; the cleanup wrapper
+  checks `NULL` before calling the destructor, so either outcome is safe
+  (no double-free). The programmer is responsible for the ownership contract
+  when passing `&p`.
 
 ---
 
@@ -252,14 +266,47 @@ struct Person {
 
 ### Rules
 
-- `class` is only valid at file scope (top level of `.hplus` or `.cplus`).
-- Nested `class` declarations are a transpile-time error in v2.
-- Fields may be any C23 type, including pointers and arrays.
+- `class` is valid at file scope and as a nested type inside another `class`
+  (consistent with C23 nested `struct` rules).
+- Nested `class` lowering: each class is emitted as a separate
+  `typedef struct` + `struct` pair, in declaration order (inner before outer).
+- Fields may be any C23 type, including pointers, arrays, and nested classes.
 - Methods are not supported in v2 — they are scoped to v3+.
 - Access modifiers (`public`, `private`) are reserved keywords but produce a
   transpile-time error if used in v2.
+- `class` inside a function body is a transpile-time error (E207).
 - The generated `typedef` makes `Name` available to C code that includes the
   generated `.h` — no `struct` prefix needed in the C world either.
+
+### Nested `class` example
+
+```cplus
+class Address {
+    char street[128];
+    int  zip;
+};
+
+class Person {
+    char    name[64];
+    int     age;
+    Address addr;
+};
+```
+
+```c
+typedef struct Address Address;
+struct Address {
+    char street[128];
+    int  zip;
+};
+
+typedef struct Person Person;
+struct Person {
+    char    name[64];
+    int     age;
+    Address addr;
+};
+```
 
 ---
 
@@ -277,8 +324,8 @@ struct Person {
         │
         ▼
    Lowering pass
-   ├── class  → typedef struct
-   ├── weak   → strip qualifier
+   ├── class  → typedef struct (inner-before-outer for nested)
+   ├── weak   → strip qualifier (identity)
    ├── unique → emit cleanup wrapper + __attribute__((cleanup(...)))
    └── move   → split into assignment + NULL; inject use-after-move asserts
         │
@@ -288,6 +335,65 @@ struct Person {
         ▼
    Syntax validation (gcc/clang -fsyntax-only)  ← unchanged from v1
 ```
+
+---
+
+## Lexer and parser architecture
+
+The v2 transpiler does **not** implement a full C23 parser. It uses a
+**specialized scanner** that recognizes cplus constructs as islands in a
+stream of C23 passthrough tokens.
+
+### Token types
+
+```
+New in v2:
+  TK_WEAK       — keyword 'weak'
+  TK_UNIQUE     — keyword 'unique'
+  TK_MOVE       — keyword 'move'
+  TK_CLASS      — keyword 'class'
+
+Minimal C23 tokens recognized by the scanner:
+  TK_IDENT      — identifier
+  TK_STAR       — *
+  TK_AMPERSAND  — &
+  TK_LBRACE     — {
+  TK_RBRACE     — }
+  TK_LPAREN     — (
+  TK_RPAREN     — )
+  TK_SEMI       — ;
+  TK_ASSIGN     — =
+  TK_PASSTHROUGH — any other token or sequence — copied verbatim to output
+```
+
+### Grammar of recognized cplus constructs
+
+```
+weak_decl   := TK_WEAK type_ref TK_STAR TK_IDENT [TK_ASSIGN expr] TK_SEMI
+
+unique_decl := TK_UNIQUE TK_LPAREN TK_IDENT TK_RPAREN
+               type_ref TK_STAR TK_IDENT TK_ASSIGN init_expr TK_SEMI
+
+init_expr   := move_expr | expr
+move_expr   := TK_MOVE TK_LPAREN TK_IDENT TK_RPAREN
+
+class_decl  := TK_CLASS TK_IDENT TK_LBRACE field_list TK_RBRACE TK_SEMI
+field_list  := (class_decl | TK_PASSTHROUGH)*
+```
+
+### Design principle
+
+Everything that does not match a cplus construct is `TK_PASSTHROUGH` and is
+copied verbatim to the output. The scanner only needs to track:
+
+- Brace depth (to find the end of `class` bodies).
+- The symbol table of `unique` variables and their moved/live state.
+- Whether the current position is at file scope or inside a function body
+  (for E207 enforcement on `class`).
+
+This design keeps the transpiler small, auditable, and independent of C23
+grammar evolution. A full C23 parse is only required in v5+ when method
+bodies and expression-level ownership tracking are needed.
 
 ---
 
@@ -408,9 +514,8 @@ int main(void) {
 | `E202` | `unique declaration requires an initializer` | `unique(fn) T *p;` |
 | `E203` | `cannot copy a unique pointer: 'X'` | `T *q = unique_p;` |
 | `E204` | `move() is only valid as a unique initializer` | `fn(move(p))` |
-| `E205` | `nested class declaration is not supported` | `class A { class B {...}; };` |
-| `E206` | `access modifiers not supported in v2` | `class A { private: int x; };` |
-| `E207` | `class declaration is only valid at file scope` | `class` inside function |
+| `E205` | `access modifiers not supported in v2` | `class A { private: int x; };` |
+| `E206` | `class declaration is only valid at file scope` | `class` inside function |
 
 ---
 
