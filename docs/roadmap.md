@@ -31,10 +31,10 @@ A feature/version is only complete when all **Definition of Done (DoD)** items a
 
 ### DoD
 
-- [ ] CLI accepts input file and emits output file.
-- [ ] Syntax errors are reported with file/line/column.
-- [ ] Golden tests cover valid and invalid C23 samples.
-- [ ] Output compiles with GCC.
+- [x] CLI accepts input file and emits output file.
+- [x] Syntax errors are reported with file/line/column.
+- [x] Golden tests cover valid and invalid C23 samples.
+- [x] Output compiles with GCC.
 - [ ] Output compiles with Clang.
 - [ ] Basic architecture documented (parser/AST/lowering/diagnostics).
 

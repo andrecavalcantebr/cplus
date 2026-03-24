@@ -64,4 +64,21 @@ ctest --test-dir build --output-on-failure
 
 ## Current status
 
-Bootstrap/reboot phase: repository structure, build system, and baseline tests.
+v1 in progress — pipeline and diagnostics infrastructure complete.
+
+### What is done
+
+- Build system (CMake + GCC, `-std=c23`, ASan/UBSan in Debug)
+- CLI (`cplus <file.(h|c)plus> [...] [-o output] [--cc gcc|clang] [--std c23]`)
+- Pipeline: syntax validation via `gcc -fsyntax-only`, identity copy on success
+- GCC compatibility shim: remaps `-std=c23` → `-std=c2x` on GCC < 14
+- Diagnostics parser: structured `Diagnostic` model with file/line/column/severity/message/context (caret lines)
+- Golden tests: valid C23 input (identity output) and invalid C23 input (no output, rc=1)
+- All source and header files follow the coding-style conventions (file headers, include guards)
+- Paired development: Andre Cavalcante + Claude Sonnet 4.6
+
+### What is pending (still in v1)
+
+- Clang validation path tested in CI
+- Architecture doc updated for diagnostics module
+- `examples/` golden fixtures expanded
