@@ -1,7 +1,7 @@
 /*
  * FILE: pipeline.c
  * DESC.: high-level workflow for cplus v1
- * AUTHOR: Andre Cavalcante
+ * AUTHOR: Andre Cavalcante and Claude Sonnet 4.6 as pair programmer
  * LICENSE: GPL-v3
  * DATE: March, 2026
  */
@@ -89,7 +89,14 @@ int pipeline_run(const PipelineOptions *options) {
     );
 
     if (validation.success == 0) {
-        diagnostics_print_raw(validation.raw_output);
+        DiagnosticList diags = diagnostics_parse(validation.raw_output);
+        if (diags.count > 0U) {
+            diagnostics_print_list(&diags);
+        } else {
+            /* Fallback: compiler output didn't match expected format */
+            diagnostics_print_raw(validation.raw_output);
+        }
+        diagnostics_free_list(&diags);
         validator_free_result(&validation);
         return 1;
     }
