@@ -1,7 +1,7 @@
 /*
  * FILE: main.c
  * DESC.: entry point for cplus v1 CLI
- * AUTHOR: Andre Cavalcante
+ * AUTHOR: Andre Cavalcante and Claude Sonnet 4.6 as pair programmer
  * LICENSE: GPL-v3
  * DATE: March, 2026
  */

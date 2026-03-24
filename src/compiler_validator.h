@@ -1,3 +1,11 @@
+/*
+ * FILE: compiler_validator.h
+ * DESC.: this file is the declaration of the compiler syntax validation API
+ * AUTHOR: Andre Cavalcante and Claude Sonnet 4.6 as pair programmer
+ * LICENSE: GPL-v3
+ * DATE: March, 2026
+ */
+
 #ifndef CPLUS_COMPILER_VALIDATOR_H
 #define CPLUS_COMPILER_VALIDATOR_H
 
@@ -14,4 +22,4 @@ ValidationResult validator_check_syntax(
 
 void validator_free_result(ValidationResult* result);
 
-#endif
+#endif // CPLUS_COMPILER_VALIDATOR_H

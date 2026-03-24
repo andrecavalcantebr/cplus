@@ -1,7 +1,7 @@
 /*
  * FILE: person.hplus
  * DESC.: this file is the cplus interface declaration of the Person module
- * AUTHOR: Andre Cavalcante
+ * AUTHOR: Andre Cavalcante and Claude Sonnet 4.6 as pair programmer
  * LICENSE: GPL-v3
  * DATE: March, 2026
  */

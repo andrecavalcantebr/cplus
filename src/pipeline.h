@@ -1,3 +1,11 @@
+/*
+ * FILE: pipeline.h
+ * DESC.: this file is the declaration of the cplus pipeline public API
+ * AUTHOR: Andre Cavalcante and Claude Sonnet 4.6 as pair programmer
+ * LICENSE: GPL-v3
+ * DATE: March, 2026
+ */
+
 #ifndef CPLUS_PIPELINE_H
 #define CPLUS_PIPELINE_H
 
@@ -10,4 +18,4 @@ typedef struct {
 
 int pipeline_run(const PipelineOptions* options);
 
-#endif
+#endif // CPLUS_PIPELINE_H

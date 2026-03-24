@@ -5,7 +5,7 @@
 /*
  * FILE: test_pipeline_success.c
  * DESC.: validates successful identity pipeline behavior
- * AUTHOR: Andre Cavalcante
+ * AUTHOR: Andre Cavalcante and Claude Sonnet 4.6 as pair programmer
  * LICENSE: GPL-v3
  * DATE: March, 2026
  */

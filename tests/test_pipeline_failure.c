@@ -5,7 +5,7 @@
 /*
  * FILE: test_pipeline_failure.c
  * DESC.: validates failure path for invalid source
- * AUTHOR: Andre Cavalcante
+ * AUTHOR: Andre Cavalcante and Claude Sonnet 4.6 as pair programmer
  * LICENSE: GPL-v3
  * DATE: March, 2026
  */

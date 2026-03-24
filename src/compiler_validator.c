@@ -1,14 +1,14 @@
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
 /*
  * FILE: compiler_validator.c
  * DESC.: syntax validation through external compilers
- * AUTHOR: Andre Cavalcante
+ * AUTHOR: Andre Cavalcante and Claude Sonnet 4.6 as pair programmer
  * LICENSE: GPL-v3
  * DATE: March, 2026
  */
+
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
 
 #include "compiler_validator.h"
 
@@ -21,6 +21,42 @@
 
 static char *shell_quote(const char *text);
 static char *read_stream_output(FILE *fp);
+static const char *resolve_std_flag(const char *compiler, const char *std_name);
+
+/*
+ * GCC < 14 does not recognise -std=c23; it uses -std=c2x instead.
+ * Query the compiler major version at runtime and remap accordingly.
+ */
+static const char *resolve_std_flag(const char *compiler, const char *std_name) {
+    if ((strcmp(std_name, "c23") != 0) || (strcmp(compiler, "gcc") != 0)) {
+        return std_name;
+    }
+
+    /* Run: gcc -dumpversion  → prints "13.3.0\n" or similar */
+    size_t cmd_size = strlen(compiler) + 16U;
+    char *cmd = (char *)malloc(cmd_size);
+    if (cmd == NULL) {
+        return std_name;
+    }
+    (void)snprintf(cmd, cmd_size, "%s -dumpversion", compiler);
+
+    FILE *fp = popen(cmd, "r");
+    free(cmd);
+    if (fp == NULL) {
+        return std_name;
+    }
+
+    char version_buf[64];
+    version_buf[0] = '\0';
+    (void)fgets(version_buf, (int)sizeof(version_buf), fp);
+    (void)pclose(fp);
+
+    int major = 0;
+    (void)sscanf(version_buf, "%d", &major);
+
+    /* -std=c23 is only recognised from GCC 14 onwards */
+    return (major > 0 && major < 14) ? "c2x" : std_name;
+}
 
 static int run_compiler_and_capture(
     const char *compiler,
@@ -181,6 +217,8 @@ ValidationResult validator_check_syntax(
         return result;
     }
 
+    const char *effective_std = resolve_std_flag(compiler, std_name);
+
     char *quoted_input = shell_quote(input_path);
     if (quoted_input == NULL) {
         result.raw_output = duplicate_string("error: internal runtime error (allocation failure)\n");
@@ -188,7 +226,7 @@ ValidationResult validator_check_syntax(
     }
 
     char *captured = NULL;
-    int sys_status = run_compiler_and_capture(compiler, std_name, quoted_input, &captured);
+    int sys_status = run_compiler_and_capture(compiler, effective_std, quoted_input, &captured);
 
     if ((sys_status < 0) || (captured == NULL)) {
         result.raw_output = duplicate_string("error: failed to run compiler validation\n");
@@ -198,22 +236,6 @@ ValidationResult validator_check_syntax(
     int success = 0;
     if (WIFEXITED(sys_status) != 0) {
         success = (WEXITSTATUS(sys_status) == 0) ? 1 : 0;
-    }
-
-    if ((success == 0) && (strcmp(std_name, "c23") == 0)) {
-        int has_std_option_error =
-            (strstr(captured, "unrecognized command-line option") != NULL) ? 1 : 0;
-
-        if (has_std_option_error != 0) {
-            free(captured);
-            captured = NULL;
-
-            int fallback_status = run_compiler_and_capture(compiler, "c2x", quoted_input, &captured);
-            if ((fallback_status >= 0) && (captured != NULL) && (WIFEXITED(fallback_status) != 0) &&
-                (WEXITSTATUS(fallback_status) == 0)) {
-                success = 1;
-            }
-        }
     }
 
     free(quoted_input);
