@@ -91,7 +91,7 @@ cplus_apply_warnings(cplus)
 if(CPLUS_BUILD_TESTS)
     enable_testing()
 
-    file(GLOB_RECURSE CPLUS_TEST_SRC CONFIGURE_DEPENDS
+    file(GLOB CPLUS_TEST_SRC CONFIGURE_DEPENDS
         "${CMAKE_SOURCE_DIR}/tests/*.c"
     )
 
@@ -104,6 +104,9 @@ if(CPLUS_BUILD_TESTS)
             "${CMAKE_SOURCE_DIR}/src"
             "${CMAKE_SOURCE_DIR}/inc"
             "${CMAKE_SOURCE_DIR}/vendor"
+        )
+        target_compile_definitions("${test_name}" PRIVATE
+            CPLUS_FIXTURES_DIR="${CMAKE_SOURCE_DIR}/tests/fixtures"
         )
         cplus_apply_warnings("${test_name}")
 
