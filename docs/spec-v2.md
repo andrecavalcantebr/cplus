@@ -72,12 +72,16 @@ T *name = expr;
 ### Syntax
 
 ```cplus
-unique(destructor) T *name = expr;
+unique T *name = expr;                   /* destructor defaults to free */
+unique(destructor) T *name = expr;       /* explicit destructor */
 unique(destructor) T *name2 = move(name);
 ```
 
-`destructor` is the name of a C function that will be called when `name` goes
-out of scope.
+`destructor` is the name of a C function called when `name` goes out of scope.
+When omitted, `free` is used as the destructor — appropriate for any
+heap-allocated pointer obtained via `malloc`, `calloc`, or `realloc`.
+
+The `destructor` argument is optional. Omitting it is not an error.
 
 ### Semantics
 
@@ -119,11 +123,12 @@ after cleanup in non-cplus code.
 The transpiler ships `inc/cplus_cleanup.h` with pre-generated wrappers for
 common C standard and POSIX destructors:
 
-| cplus `unique(fn)` | generated wrapper |
-|--------------------|-------------------|
-| `unique(fclose)` | `_cplus_cleanup_fclose` |
-| `unique(free)` | `_cplus_cleanup_free` |
-| `unique(close)` | `_cplus_cleanup_close` |
+| cplus `unique(fn)` | generated wrapper | note |
+|--------------------|-------------------|------|
+| `unique` (no destructor) | `_cplus_cleanup_free` | default |
+| `unique(free)` | `_cplus_cleanup_free` | explicit — same result |
+| `unique(fclose)` | `_cplus_cleanup_fclose` | |
+| `unique(close)` | `_cplus_cleanup_close` | |
 
 The programmer never writes these wrappers. The transpiler includes
 `cplus_cleanup.h` automatically when any builtin destructor is referenced.
@@ -131,8 +136,9 @@ The programmer never writes these wrappers. The transpiler includes
 ### Rules
 
 - `unique` may appear in any scope (function, block, loop body).
-- The declaration must include an initializer: `unique(fn) T *p = expr;`
-- Uninitialized `unique` declaration is a transpile-time error.
+- The declaration must include an initializer: `unique T *p = expr;`
+- Uninitialized `unique` declaration is a transpile-time error (E202).
+- The `(destructor)` argument is optional; omitting it implies `free`.
 - Passing a `unique` pointer as a function argument is allowed (non-owning use).
 - Assigning a `unique` pointer to a plain pointer is a transpile-time error
   (see: copy prohibition below).
@@ -213,15 +219,19 @@ fn(p);           /* OK   : passing as argument is a non-owning use */
 
 - Any assignment `T *lhs = unique_rhs` where `lhs` is not declared `unique` is
   a transpile-time error.
-- Passing a `unique` pointer as a function argument (`fn(p)`) is allowed — the
-  function receives a copy of the address (non-owning use). The `unique`
-  variable retains ownership; the cleanup fires at the end of its scope.
+- Passing a `unique` pointer as a function argument (`fn(p)`) is allowed —
+  the function receives a copy of the address (non-owning use, equivalent to
+  Rust's shared borrow `fn(&box_val)`). The `unique` variable retains
+  ownership; the cleanup fires at the end of its scope.
 - Passing the address of a `unique` pointer (`fn(&p)`) is allowed. This is
   **not** a `move` — the transpiler does not infer ownership transfer from
-  `&p`. The called function may or may not zero `*pp`; the cleanup wrapper
+  `&p` (analogous to Rust's `fn(&mut box_val)`: exclusive access, no transfer).
+  The called function may or may not zero `*pp`; the cleanup wrapper
   checks `NULL` before calling the destructor, so either outcome is safe
   (no double-free). The programmer is responsible for the ownership contract
   when passing `&p`.
+- Ownership transfer always requires explicit `move()` — there is no implicit
+  move on pass-by-value (unlike Rust, where passing by value is the move).
 
 ---
 
