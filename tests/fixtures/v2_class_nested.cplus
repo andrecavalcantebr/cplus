@@ -1,0 +1,16 @@
+class Address {
+    char street[128];
+    int  zip;
+};
+
+class Person {
+    char    name[64];
+    int     age;
+    Address addr;
+};
+
+int main(void) {
+    Person p;
+    p.age = 30;
+    return 0;
+}

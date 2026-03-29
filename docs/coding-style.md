@@ -98,7 +98,7 @@ Template:
 Example:
 
 ```c
-#include "validator.h"
+// file: validator.h
 
 #include <stdio.h>
 #include <stdlib.h>

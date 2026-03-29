@@ -1,0 +1,11 @@
+#include <stdlib.h>
+
+static void int_free(int **pp) {
+    if (*pp != NULL) { free(*pp); *pp = NULL; }
+}
+
+void example(void) {
+    unique(int_free) int *p = malloc(sizeof(int));
+    *p = 42;
+    (void)p;
+}

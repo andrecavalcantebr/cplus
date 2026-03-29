@@ -15,11 +15,13 @@
 #define MAX_INPUTS 256
 
 static void print_usage(const char *program_name) {
-    fprintf(stderr, "Usage: %s <file.hplus|file.cplus> [...] [-o <output>] [--cc gcc|clang] [--std c23]\n",
+    fprintf(stderr, "Usage: %s <file.hplus|file.cplus> [...] [-o <output>] [--cc gcc|clang] [--std c23] [-T]\n",
             program_name);
-    fprintf(stderr, "  -o <output>   output path; only valid with a single input file\n");
-    fprintf(stderr, "  --cc          compiler to use for validation (default: gcc)\n");
-    fprintf(stderr, "  --std         C standard for validation (default: c23)\n");
+    fprintf(stderr, "  -o <output>      output path; only valid with a single input file\n");
+    fprintf(stderr, "  --cc             compiler to use for validation (default: gcc)\n");
+    fprintf(stderr, "  --std            C standard for validation (default: c23)\n");
+    fprintf(stderr, "  -T               dump token stream to stdout (or -o file) and exit\n");
+    fprintf(stderr, "  --dump-tokens    alias for -T\n");
 }
 
 /* Replace .hplus -> .h and .cplus -> .c in-place.
@@ -61,11 +63,12 @@ static char *build_default_output_path(const char *input_path) {
 }
 
 int main(int argc, char *argv[]) {
-    const char *inputs[MAX_INPUTS];
-    int         n_inputs   = 0;
-    const char *output_path = NULL;
-    const char *compiler    = "gcc";
-    const char *std_name    = "c23";
+    const char  *inputs[MAX_INPUTS];
+    int          n_inputs    = 0;
+    const char  *output_path = NULL;
+    const char  *compiler    = "gcc";
+    const char  *std_name    = "c23";
+    PipelineMode mode        = PIPELINE_MODE_TRANSPILE;
 
     if (argc < 2) {
         print_usage(argv[0]);
@@ -91,6 +94,8 @@ int main(int argc, char *argv[]) {
                 return 1;
             }
             std_name = argv[++i];
+        } else if ((strcmp(argv[i], "-T") == 0) || (strcmp(argv[i], "--dump-tokens") == 0)) {
+            mode = PIPELINE_MODE_DUMP_TOKENS;
         } else if (argv[i][0] == '-') {
             fprintf(stderr, "error: unknown option '%s'\n", argv[i]);
             print_usage(argv[0]);
@@ -120,7 +125,9 @@ int main(int argc, char *argv[]) {
         char *owned_output = NULL;
         const char *out    = output_path;
 
-        if (out == NULL) {
+        /* In dump-tokens mode the output defaults to stdout (out == NULL).
+         * Only derive a .c/.h output path for the full transpile mode. */
+        if ((out == NULL) && (mode == PIPELINE_MODE_TRANSPILE)) {
             owned_output = build_default_output_path(inputs[i]);
             if (owned_output == NULL) {
                 fprintf(stderr, "internal runtime error: failed to allocate output path\n");
@@ -134,6 +141,7 @@ int main(int argc, char *argv[]) {
             .output_path = out,
             .compiler    = compiler,
             .std_name    = std_name,
+            .mode        = mode,
         };
 
         int rc = pipeline_run(&options);

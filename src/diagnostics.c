@@ -10,6 +10,7 @@
  */
 
 #include "diagnostics.h"
+#include "strbuf.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,35 +19,6 @@
 /* -------------------------------------------------------------------------
  * Internal helpers
  * ---------------------------------------------------------------------- */
-
-/*
- * Append src[0..src_len) + '\n' to *buf, growing the allocation as needed.
- * *buf may be NULL on entry (treated as empty string).
- * Returns 1 on success, 0 on allocation failure.
- */
-static int append_line(char **buf, size_t *buf_len, size_t *buf_cap,
-                       const char *src, size_t src_len) {
-    size_t needed = *buf_len + src_len + 2U; /* +1 '\n', +1 NUL */
-
-    if (needed > *buf_cap) {
-        size_t new_cap = (*buf_cap == 0U) ? 256U : *buf_cap * 2U;
-        while (new_cap < needed) {
-            new_cap *= 2U;
-        }
-        char *resized = (char *)realloc(*buf, new_cap);
-        if (resized == NULL) {
-            return 0;
-        }
-        *buf = resized;
-        *buf_cap = new_cap;
-    }
-
-    memcpy(*buf + *buf_len, src, src_len);
-    (*buf)[*buf_len + src_len]      = '\n';
-    (*buf)[*buf_len + src_len + 1U] = '\0';
-    *buf_len += src_len + 1U;
-    return 1;
-}
 
 /*
  * Try to parse a primary diagnostic line of the form:
@@ -170,9 +142,8 @@ DiagnosticList diagnostics_parse(const char *raw_output) {
      *   current.file == NULL  → idle, waiting for a primary line
      */
     Diagnostic current = {NULL, 0, 0, DIAG_ERROR, NULL, NULL};
-    char  *ctx_buf = NULL;
-    size_t ctx_len = 0U;
-    size_t ctx_cap = 0U;
+    StrBuf ctx;
+    strbuf_init(&ctx);
 
     const char *pos = raw_output;
 
@@ -199,12 +170,10 @@ DiagnosticList diagnostics_parse(const char *raw_output) {
         if (matched != 0) {
             /* Flush previous diagnostic */
             if (current.file != NULL) {
-                current.context = ctx_buf;
+                current.context = strbuf_take(&ctx, NULL);
                 (void)list_push(&list, &current);
                 current = (Diagnostic){NULL, 0, 0, DIAG_ERROR, NULL, NULL};
-                ctx_buf = NULL;
-                ctx_len = 0U;
-                ctx_cap = 0U;
+                strbuf_init(&ctx);
             }
 
             /* strndup: C23 standard (§7.27.6) — no copy into fixed buffer */
@@ -222,7 +191,8 @@ DiagnosticList diagnostics_parse(const char *raw_output) {
         } else {
             /* Context line (caret, source snippet, or "In function" header) */
             if (current.file != NULL && line_len > 0U) {
-                (void)append_line(&ctx_buf, &ctx_len, &ctx_cap, pos, line_len);
+                (void)strbuf_append_bytes(&ctx, pos, line_len);
+                (void)strbuf_append_cstr(&ctx, "\n");
             }
             /* Lines before the first diagnostic are dropped */
         }
@@ -232,10 +202,10 @@ DiagnosticList diagnostics_parse(const char *raw_output) {
 
     /* Flush last pending diagnostic */
     if (current.file != NULL) {
-        current.context = ctx_buf;
+        current.context = strbuf_take(&ctx, NULL);
         (void)list_push(&list, &current);
     } else {
-        free(ctx_buf);
+        strbuf_free(&ctx);
     }
 
     return list;

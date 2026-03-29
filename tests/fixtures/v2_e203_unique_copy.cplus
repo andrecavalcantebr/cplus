@@ -1,0 +1,7 @@
+#include <stdlib.h>
+
+void example(void) {
+    unique int *p = malloc(sizeof(int));
+    int *q = p;
+    (void)q;
+}

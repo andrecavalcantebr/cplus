@@ -1,0 +1,8 @@
+#include <stdlib.h>
+
+static void consume(int *p) { (void)p; }
+
+void example(void) {
+    unique int *p = malloc(sizeof(int));
+    consume(move(p));
+}

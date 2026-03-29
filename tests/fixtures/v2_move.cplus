@@ -1,0 +1,8 @@
+#include <stdlib.h>
+
+void example(void) {
+    unique int *src = malloc(sizeof(int));
+    *src = 99;
+    unique int *dst = move(src);
+    (void)dst;
+}

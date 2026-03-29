@@ -1,0 +1,61 @@
+{
+  "name": "vscode-cplus-lint",
+  "displayName": "cplus Lint",
+  "description": "Syntax checking for .cplus files using gcc/clang",
+  "version": "0.1.0",
+  "publisher": "andrecavalcantebr",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Linters",
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:cplus"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "cplus",
+        "aliases": ["cplus", "C+"],
+        "extensions": [".cplus"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "cplus",
+        "scopeName": "source.c",
+        "path": "./syntaxes/c.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "cplus Lint",
+      "properties": {
+        "cplusLint.compiler": {
+          "type": "string",
+          "default": "gcc",
+          "enum": ["gcc", "clang"],
+          "description": "Compiler to use for syntax validation."
+        },
+        "cplusLint.std": {
+          "type": "string",
+          "default": "c23",
+          "description": "C standard flag passed to the compiler (e.g. c23, c2x, c17)."
+        },
+        "cplusLint.lintOnChange": {
+          "type": "boolean",
+          "default": true,
+          "description": "Lint while typing (uses a temp file). When false, lints only on save."
+        },
+        "cplusLint.lintDelay": {
+          "type": "number",
+          "default": 600,
+          "description": "Debounce delay in milliseconds before linting after a change."
+        }
+      }
+    }
+  }
+}

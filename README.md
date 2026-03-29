@@ -21,6 +21,7 @@ The old code (MPC based) was archived in a historic branch/tag.
 - Validate with GCC first, then Clang.
 - Prefer explicit semantics over heuristics.
 - `.hplus` / `.cplus` are source; `.h` / `.c` are generated artefacts — never edit generated files.
+- When a `.cplus` file includes a `.hplus` header, **transpile headers first**. The lowering pass rewrites `#include "foo.hplus"` → `#include "foo.h"` in the generated `.c`; enforce ordering via Make/CMake.
 
 ## Roadmap
 
@@ -43,13 +44,16 @@ The old code (MPC based) was archived in a historic branch/tag.
   - Smart pointers and stronger RAII model.
   - Didactic OOP lowering to plain C.
 
-## Build (GCC + CMake generating Makefiles)
+## Build (GCC + CMake)
 
 ```bash
-cmake -S . -B build -G "Unix Makefiles" -DCMAKE_C_COMPILER=gcc -DCMAKE_BUILD_TYPE=Debug
-cmake --build build -j
-ctest --test-dir build --output-on-failure
+cmake -B build -DCMAKE_BUILD_TYPE=Debug   # configure (ASan/UBSan enabled)
+cmake --build build                        # build
+ctest --test-dir build --output-on-failure # run all tests
+cmake --build build --target memcheck      # valgrind (optional)
 ```
+
+> After adding any new `.c` file, re-run `cmake -B build` — sources are collected with `GLOB_RECURSE CONFIGURE_DEPENDS`.
 
 ## Directory layout
 
@@ -64,21 +68,33 @@ ctest --test-dir build --output-on-failure
 
 ## Current status
 
-v1 in progress — pipeline and diagnostics infrastructure complete.
+**v1 — complete.** **v2 — in progress.**
 
-### What is done
+### v1 — done
 
 - Build system (CMake + GCC, `-std=c23`, ASan/UBSan in Debug)
-- CLI (`cplus <file.(h|c)plus> [...] [-o output] [--cc gcc|clang] [--std c23]`)
+- CLI (`cplus <file.(h|c)plus> [...] [-o output] [--cc gcc|clang] [--std c23] [-T]`)
+- `-T` / `--dump-tokens`: print the token stream to stdout (or `-o` file), analogous to `gcc -E`
 - Pipeline: syntax validation via `gcc -fsyntax-only`, identity copy on success
 - GCC compatibility shim: remaps `-std=c23` → `-std=c2x` on GCC < 14
-- Diagnostics parser: structured `Diagnostic` model with file/line/column/severity/message/context (caret lines)
-- Golden tests: valid C23 input (identity output) and invalid C23 input (no output, rc=1)
-- All source and header files follow the coding-style conventions (file headers, include guards)
+- Diagnostics parser: structured `DiagnosticList` with file/line/column/severity/message/context
+- `StrBuf` ADT (`src/strbuf.{h,c}`): growable byte buffer used by diagnostics and lowering
+- Golden tests: valid C23 input (identity output) and invalid C23 input (rc=1)
+- All sources follow coding-style conventions (file headers, include guards)
 - Paired development: Andre Cavalcante + Claude Sonnet 4.6
 
-### What is pending (still in v1)
+### v2 — in progress
 
-- Clang validation path tested in CI
-- Architecture doc updated for diagnostics module
-- `examples/` golden fixtures expanded
+v2 introduces `weak`, `unique`, `move`, and `class` as first-class cplus constructs
+transpiled to idiomatic C23. See [docs/spec-v2.md](docs/spec-v2.md) for full semantics
+and lowering rules.
+
+**Done:**
+- v2 test fixtures created (`tests/fixtures/v2_*.cplus` + `.expected.c`)
+- `StrBuf` ADT (foundation for the lowering output buffer)
+- Lexer (`src/lexer.{h,c}`) — island scanner, keyword table, pull-based `lexer_next`/`lexer_peek`
+
+**In progress:**
+- Island AST (`src/ast.{h,c}`) — sparse tree: cplus nodes + `NODE_PASSTHROUGH` for C23 verbatim
+- Parser (`src/parser.{h,c}`) — recursive descent, produces AST; detects E201–E202/E204–E206
+- Lowering (`src/lowering.{h,c}`) — AST visitor, emits C23 via `StrBuf`; rewrites `#include "*.hplus"` → `#include "*.h"` in output

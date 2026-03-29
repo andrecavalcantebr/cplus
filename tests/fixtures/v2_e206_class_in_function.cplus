@@ -1,0 +1,7 @@
+int main(void) {
+    class Point {
+        int x;
+        int y;
+    };
+    return 0;
+}
