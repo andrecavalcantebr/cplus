@@ -1,0 +1,14 @@
+{
+  "scopeName": "cplus.keyword-injection",
+  "injectionSelector": "L:source.cplus, L:source.hplus",
+  "patterns": [
+    {
+      "name": "keyword.control.cplus",
+      "match": "\\b(class)\\b"
+    },
+    {
+      "name": "storage.modifier.cplus",
+      "match": "\\b(weak|unique|move)\\b"
+    }
+  ]
+}

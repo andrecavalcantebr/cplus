@@ -1,0 +1,9 @@
+{
+  "name": "cplus",
+  "scopeName": "source.cplus",
+  "patterns": [
+    {
+      "include": "source.c"
+    }
+  ]
+}

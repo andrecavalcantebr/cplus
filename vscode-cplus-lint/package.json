@@ -2,7 +2,7 @@
   "name": "vscode-cplus-lint",
   "displayName": "cplus Lint",
   "description": "Syntax checking for .cplus files using gcc/clang",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "andrecavalcantebr",
   "engines": {
     "vscode": "^1.75.0"
@@ -12,32 +12,67 @@
     "Programming Languages"
   ],
   "activationEvents": [
-    "onLanguage:cplus"
+    "onLanguage:cplus",
+    "onLanguage:hplus"
   ],
   "main": "./extension.js",
   "contributes": {
     "languages": [
       {
         "id": "cplus",
-        "aliases": ["cplus", "C+"],
-        "extensions": [".cplus"],
+        "aliases": [
+          "cplus",
+          "C+"
+        ],
+        "extensions": [
+          ".cplus"
+        ],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "hplus",
+        "aliases": [
+          "hplus",
+          "C+ Header"
+        ],
+        "extensions": [
+          ".hplus"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
     "grammars": [
       {
         "language": "cplus",
-        "scopeName": "source.c",
-        "path": "./syntaxes/c.tmLanguage.json"
+        "scopeName": "source.cplus",
+        "path": "./syntaxes/cplus.tmLanguage.json"
+      },
+      {
+        "language": "hplus",
+        "scopeName": "source.hplus",
+        "path": "./syntaxes/hplus.tmLanguage.json"
+      },
+      {
+        "scopeName": "cplus.keyword-injection",
+        "path": "./syntaxes/cplus-injection.tmLanguage.json",
+        "injectTo": ["source.cplus", "source.hplus"]
       }
     ],
     "configuration": {
       "title": "cplus Lint",
       "properties": {
+        "cplusLint.enableDiagnostics": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable compiler-based diagnostics. When false, keeps only syntax highlighting/tokenization."
+        },
         "cplusLint.compiler": {
           "type": "string",
           "default": "gcc",
-          "enum": ["gcc", "clang"],
+          "enum": [
+            "gcc",
+            "clang"
+          ],
           "description": "Compiler to use for syntax validation."
         },
         "cplusLint.std": {
@@ -57,5 +92,8 @@
         }
       }
     }
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^2.32.0"
   }
 }

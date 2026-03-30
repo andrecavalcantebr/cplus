@@ -21,6 +21,18 @@ function activate(/** @type {vscode.ExtensionContext} */ context) {
     context.subscriptions.push(diagnosticCollection);
 
     context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration(event => {
+            if (event.affectsConfiguration('cplusLint.enableDiagnostics')) {
+                const config = getConfig();
+                if (!config.enableDiagnostics) {
+                    diagnosticCollection.clear();
+                    debounceTimers.forEach(t => clearTimeout(t));
+                    debounceTimers.clear();
+                } else {
+                    vscode.workspace.textDocuments.forEach(doc => lintDocument(doc));
+                }
+            }
+        }),
         vscode.workspace.onDidOpenTextDocument(doc => lintDocument(doc)),
         vscode.workspace.onDidSaveTextDocument(doc => lintDocument(doc)),
         vscode.workspace.onDidChangeTextDocument(event => onDocumentChange(event.document)),
@@ -47,9 +59,10 @@ function deactivate() {
 // ---------------------------------------------------------------------------
 
 function onDocumentChange(/** @type {vscode.TextDocument} */ document) {
-    if (document.languageId !== 'cplus') { return; }
+    if (document.languageId !== 'cplus' && document.languageId !== 'hplus') { return; }
 
     const config = getConfig();
+    if (!config.enableDiagnostics) { return; }
     if (!config.lintOnChange) { return; }
 
     const key = document.uri.toString();
@@ -73,7 +86,11 @@ function clearTimer(key) {
 // ---------------------------------------------------------------------------
 
 function lintDocument(/** @type {vscode.TextDocument} */ document) {
-    if (document.languageId !== 'cplus') { return; }
+    if (document.languageId !== 'cplus' && document.languageId !== 'hplus') { return; }
+    if (!getConfig().enableDiagnostics) {
+        diagnosticCollection.delete(document.uri);
+        return;
+    }
     lintDocumentContent(document, document.getText());
 }
 
@@ -81,7 +98,8 @@ function lintDocumentContent(
     /** @type {vscode.TextDocument} */ document,
     /** @type {string} */ content
 ) {
-    const tmpFile = path.join(os.tmpdir(), `cplus_lint_${process.pid}_${Date.now()}.c`);
+    const tmpExt  = document.languageId === 'hplus' ? '.h' : '.c';
+    const tmpFile = path.join(os.tmpdir(), `cplus_lint_${process.pid}_${Date.now()}${tmpExt}`);
 
     try {
         fs.writeFileSync(tmpFile, content, 'utf8');
@@ -92,9 +110,10 @@ function lintDocumentContent(
     const config  = getConfig();
     const compiler = config.compiler;
     const std      = config.std;
+    const includeArgs = buildIncludeArgs(document);
 
     resolveStdFlag(compiler, std, effectiveStd => {
-        const args = ['-x', 'c', `-std=${effectiveStd}`, '-fsyntax-only', tmpFile];
+        const args = ['-x', 'c', `-std=${effectiveStd}`, ...includeArgs, '-fsyntax-only', tmpFile];
         cp.execFile(compiler, args, { timeout: 10000 }, (_err, _stdout, stderr) => {
             try { fs.unlinkSync(tmpFile); } catch (_) {}
 
@@ -154,11 +173,30 @@ function parseDiagnostics(/** @type {string} */ output) {
 function getConfig() {
     const cfg = vscode.workspace.getConfiguration('cplusLint');
     return {
+        enableDiagnostics: cfg.get('enableDiagnostics', false),
         compiler:     cfg.get('compiler', 'gcc'),
         std:          cfg.get('std', 'c23'),
         lintOnChange: cfg.get('lintOnChange', true),
         lintDelay:    cfg.get('lintDelay', 600),
     };
+}
+
+function buildIncludeArgs(/** @type {vscode.TextDocument} */ document) {
+    const includeDirs = new Set();
+    const documentDir = path.dirname(document.fileName);
+
+    includeDirs.add(documentDir);
+
+    for (const folder of vscode.workspace.workspaceFolders || []) {
+        includeDirs.add(folder.uri.fsPath);
+    }
+
+    const args = [];
+    for (const includeDir of includeDirs) {
+        args.push('-I', includeDir);
+    }
+
+    return args;
 }
 
 /**
