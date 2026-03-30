@@ -43,3 +43,14 @@
 # Uncomment if these are always generated, not manually maintained:
 # /inc/
 # /lib/
+
+# VS Code extension — npm artifacts
+vscode-cplus-lint/node_modules/
+vscode-cplus-lint/package-lock.json
+
+# Generated cplus output in examples/ (produced by transpiler, never edit manually)
+examples/*.c
+examples/*.h
+examples/*.out.c
+examples/*.out.h
+examples/person
