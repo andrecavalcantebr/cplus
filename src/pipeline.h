@@ -14,10 +14,12 @@
  *
  *   PIPELINE_MODE_TRANSPILE   — full transpile: validate + lower + write output
  *   PIPELINE_MODE_DUMP_TOKENS — lex only: print the token stream, no output file
+ *   PIPELINE_MODE_DUMP_AST    — lex + parse: print the island AST, no output file
  */
 typedef enum {
     PIPELINE_MODE_TRANSPILE   = 0,
-    PIPELINE_MODE_DUMP_TOKENS
+    PIPELINE_MODE_DUMP_TOKENS,
+    PIPELINE_MODE_DUMP_AST
 } PipelineMode;
 
 typedef struct {

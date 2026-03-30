@@ -22,6 +22,7 @@ static void print_usage(const char *program_name) {
     fprintf(stderr, "  --std            C standard for validation (default: c23)\n");
     fprintf(stderr, "  -T               dump token stream to stdout (or -o file) and exit\n");
     fprintf(stderr, "  --dump-tokens    alias for -T\n");
+    fprintf(stderr, "  --dump-ast       parse and print the island AST to stdout (or -o file) and exit\n");
 }
 
 /* Replace .hplus -> .h and .cplus -> .c in-place.
@@ -96,6 +97,8 @@ int main(int argc, char *argv[]) {
             std_name = argv[++i];
         } else if ((strcmp(argv[i], "-T") == 0) || (strcmp(argv[i], "--dump-tokens") == 0)) {
             mode = PIPELINE_MODE_DUMP_TOKENS;
+        } else if (strcmp(argv[i], "--dump-ast") == 0) {
+            mode = PIPELINE_MODE_DUMP_AST;
         } else if (argv[i][0] == '-') {
             fprintf(stderr, "error: unknown option '%s'\n", argv[i]);
             print_usage(argv[0]);

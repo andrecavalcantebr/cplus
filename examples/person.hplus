@@ -9,10 +9,10 @@
 #ifndef PERSON_H
 #define PERSON_H
 
-typedef struct {
+class Person {
     char name[64];
     int  age;
-} Person;
+};
 
 void        person_set_name(Person *p, const char *name);
 void        person_set_age(Person *p, int age);
