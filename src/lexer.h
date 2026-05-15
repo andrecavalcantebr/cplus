@@ -28,7 +28,7 @@ typedef enum {
     TK_WEAK,         /* weak                                               */
     TK_UNIQUE,       /* unique                                             */
     TK_MOVE,         /* move                                               */
-    TK_CLASS,        /* class                                              */
+    TK_STRUCT,       /* struct (at file scope → auto-typedef)              */
 
     /* single-character structural tokens */
     TK_STAR,         /* *                                                  */

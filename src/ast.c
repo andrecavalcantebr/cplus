@@ -50,17 +50,17 @@ AstNode *ast_passthrough(const char *text, size_t len, int line, int col) {
     return n;
 }
 
-AstNode *ast_class(const char *name, AstNode *fields, int line, int col) {
-    AstNode *n = alloc_node(NODE_CLASS, line, col);
+AstNode *ast_struct_decl(const char *name, AstNode *fields, int line, int col) {
+    AstNode *n = alloc_node(NODE_STRUCT_DECL, line, col);
     if (n == NULL) {
         return NULL;
     }
-    n->class_decl.name = strdup(name);
-    if (n->class_decl.name == NULL) {
+    n->struct_decl.name = strdup(name);
+    if (n->struct_decl.name == NULL) {
         free(n);
         return NULL;
     }
-    n->class_decl.fields = fields; /* ownership transferred */
+    n->struct_decl.fields = fields; /* ownership transferred */
     return n;
 }
 
@@ -157,9 +157,9 @@ void ast_free(AstNode *node) {
                 free(node->passthrough.text);
                 break;
 
-            case NODE_CLASS:
-                free(node->class_decl.name);
-                ast_free(node->class_decl.fields); /* recurse into children */
+            case NODE_STRUCT_DECL:
+                free(node->struct_decl.name);
+                ast_free(node->struct_decl.fields); /* recurse into children */
                 break;
 
             case NODE_WEAK_DECL:
@@ -192,7 +192,7 @@ void ast_free(AstNode *node) {
 const char *ast_node_kind_name(NodeKind kind) {
     switch (kind) {
         case NODE_PASSTHROUGH:  return "PASSTHROUGH";
-        case NODE_CLASS:        return "CLASS";
+        case NODE_STRUCT_DECL:  return "STRUCT_DECL";
         case NODE_WEAK_DECL:    return "WEAK_DECL";
         case NODE_UNIQUE_DECL:  return "UNIQUE_DECL";
         case NODE_MOVE_EXPR:    return "MOVE_EXPR";
@@ -219,10 +219,10 @@ void ast_dump(const AstNode *node, int depth, FILE *out) {
                         n->passthrough.len, n->line, n->col);
                 break;
 
-            case NODE_CLASS:
-                fprintf(out, "CLASS \"%s\" line=%d:%d\n",
-                        n->class_decl.name, n->line, n->col);
-                ast_dump(n->class_decl.fields, depth + 1, out);
+            case NODE_STRUCT_DECL:
+                fprintf(out, "STRUCT_DECL \"%s\" line=%d:%d\n",
+                        n->struct_decl.name, n->line, n->col);
+                ast_dump(n->struct_decl.fields, depth + 1, out);
                 break;
 
             case NODE_WEAK_DECL: {

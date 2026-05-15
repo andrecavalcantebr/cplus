@@ -1,9 +1,9 @@
-class Address {
+struct Address {
     char street[128];
     int  zip;
 };
 
-class Person {
+struct Person {
     char    name[64];
     int     age;
     Address addr;

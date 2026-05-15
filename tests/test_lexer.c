@@ -87,13 +87,13 @@ static void test_keyword_move(void) {
     check_tok(__func__, lexer_next(&lex), TK_EOF,  NULL);
 }
 
-/* 5. Keyword class */
-static void test_keyword_class(void) {
-    const char *src = "class";
+/* 5. Keyword struct */
+static void test_keyword_struct(void) {
+    const char *src = "struct";
     Lexer lex;
     lexer_init(&lex, src, strlen(src));
-    check_tok(__func__, lexer_next(&lex), TK_CLASS, "class");
-    check_tok(__func__, lexer_next(&lex), TK_EOF,   NULL);
+    check_tok(__func__, lexer_next(&lex), TK_STRUCT, "struct");
+    check_tok(__func__, lexer_next(&lex), TK_EOF,    NULL);
 }
 
 /* 6. Non-keyword identifier */
@@ -162,10 +162,10 @@ static void test_cpp_directive(void) {
     check_tok(__func__, lexer_next(&lex), TK_EOF, NULL);
 }
 
-/* 12. Full class declaration sequence
- *     Input: "class Person { int age; };"
+/* 12. Full struct declaration sequence
+ *     Input: "struct Person { int age; };"
  *     Expected token stream:
- *       TK_CLASS("class")
+ *       TK_STRUCT("struct")
  *       TK_PASSTHROUGH(" ")
  *       TK_IDENT("Person")
  *       TK_PASSTHROUGH(" ")
@@ -180,12 +180,12 @@ static void test_cpp_directive(void) {
  *       TK_SEMI(";")
  *       TK_EOF
  */
-static void test_class_sequence(void) {
-    const char *src = "class Person { int age; };";
+static void test_struct_sequence(void) {
+    const char *src = "struct Person { int age; };";
     Lexer lex;
     lexer_init(&lex, src, strlen(src));
 
-    check_tok(__func__, lexer_next(&lex), TK_CLASS,       "class");
+    check_tok(__func__, lexer_next(&lex), TK_STRUCT,      "struct");
     check_tok(__func__, lexer_next(&lex), TK_PASSTHROUGH, " ");
     check_tok(__func__, lexer_next(&lex), TK_IDENT,       "Person");
     check_tok(__func__, lexer_next(&lex), TK_PASSTHROUGH, " ");
@@ -269,14 +269,14 @@ int main(void) {
     test_keyword_weak();
     test_keyword_unique();
     test_keyword_move();
-    test_keyword_class();
+    test_keyword_struct();
     test_ident();
     test_structural_tokens();
     test_keyword_in_dq_string();
     test_keyword_in_line_comment();
     test_keyword_in_block_comment();
     test_cpp_directive();
-    test_class_sequence();
+    test_struct_sequence();
     test_peek_non_advancing();
     test_digit_passthrough_and_star();
     test_double_assign();

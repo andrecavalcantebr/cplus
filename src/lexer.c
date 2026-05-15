@@ -71,7 +71,7 @@ static TokenKind classify_ident(const char *start, size_t len) {
     if (len == 4U && memcmp(start, "weak",   4U) == 0) { return TK_WEAK;   }
     if (len == 6U && memcmp(start, "unique", 6U) == 0) { return TK_UNIQUE; }
     if (len == 4U && memcmp(start, "move",   4U) == 0) { return TK_MOVE;   }
-    if (len == 5U && memcmp(start, "class",  5U) == 0) { return TK_CLASS;  }
+    if (len == 6U && memcmp(start, "struct", 6U) == 0) { return TK_STRUCT; }
     return TK_IDENT;
 }
 
@@ -408,7 +408,7 @@ const char *lexer_token_kind_name(TokenKind kind) {
         case TK_WEAK:        return "TK_WEAK";
         case TK_UNIQUE:      return "TK_UNIQUE";
         case TK_MOVE:        return "TK_MOVE";
-        case TK_CLASS:       return "TK_CLASS";
+        case TK_STRUCT:      return "TK_STRUCT";
         case TK_STAR:        return "TK_STAR";
         case TK_AMPERSAND:   return "TK_AMPERSAND";
         case TK_LBRACE:      return "TK_LBRACE";

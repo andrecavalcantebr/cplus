@@ -44,7 +44,11 @@ A feature/version is only complete when all **Definition of Done (DoD)** items a
 
 ### Scope
 
-- Introduce a first minimal extension set.
+- `struct` auto-typedef at file scope: emit `typedef struct Name Name;` automatically.
+- `weak` pointer annotation (non-owning, identity lowering).
+- `unique` owning pointer with automatic cleanup via `__attribute__((cleanup))`.
+- `move()` ownership transfer with use-after-move detection.
+- New reserved keywords: `weak`, `unique`, `move`.
 - Keep transformation rules explicit and simple.
 
 ### DoD
@@ -57,19 +61,22 @@ A feature/version is only complete when all **Definition of Done (DoD)** items a
 
 ---
 
-## v3 — `cplus (more elaborate statements) -> C23`
+## v3 — `cplus (ADT method syntax) -> C23`
 
 ### Scope
 
-- Add structured advanced statements (e.g., RAII/resource patterns).
-- Handle nested constructs safely.
+- Function prototypes inside `struct` bodies: extracted at transpile time, not treated as fields.
+- `Type.fn()` definition syntax → lowered to `Type_fn()` in output.
+- `static` prototype or definition → `static` in generated C (private function).
+- Convention: public functions prefixed `TypeName_`; private functions `static typename_`.
 
 ### DoD
 
-- [ ] Control-flow interactions are specified (`break`, `continue`, `return`, `goto`).
-- [ ] Nested lowering is validated with dedicated tests.
-- [ ] Error messages explain invalid control flow clearly.
-- [ ] Resource cleanup ordering is deterministic and tested.
+- [ ] Grammar for prototype-in-struct is documented.
+- [ ] `Type.fn()` definition syntax is documented with examples.
+- [ ] `static` visibility lowering is specified and tested.
+- [ ] Negative tests for malformed syntax (prototype with body inside struct, etc.).
+- [ ] Generated C for new statements is readable and compiles on GCC/Clang.
 - [ ] Regression suite prevents breakage of v1/v2 behavior.
 
 ---
@@ -90,18 +97,20 @@ A feature/version is only complete when all **Definition of Done (DoD)** items a
 
 ---
 
-## v5+ — `cplus (OO syntax) -> C23`
+## v5+ — `cplus (dot-call syntax) -> C23`
 
 ### Scope
 
-- Introduce object-oriented syntax (classes and related features).
+- Dot-call syntax: `obj.method(args)` → `TypeName_method(&obj, args)`.
+- Requires type inference: transpiler must resolve the type of `obj` to find the correct prefix.
+- Composition-first: no inheritance, no vtables — plain struct embedding.
 - Keep generated C educational and explicit.
 
 ### DoD
 
-- [ ] OO syntax and semantics are formally specified.
-- [ ] Lowering model to C structs/functions is documented.
-- [ ] Lifecycle model (RAII/smart pointers) is defined and tested.
+- [ ] Dot-call syntax and type inference rules are formally specified.
+- [ ] Lowering model (`obj.method(args)` → `Type_method(&obj, args)`) is documented.
+- [ ] Composition model (nested structs, delegate calls) is specified and tested.
 - [ ] At least one non-trivial end-to-end example compiles and runs on GCC/Clang.
 - [ ] Documentation includes “under-the-hood” explanation for teaching use.
 

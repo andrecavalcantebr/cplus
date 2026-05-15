@@ -17,8 +17,8 @@ accepted because GCC and Clang are the declared target compilers of cplus.
 The following identifiers are reserved by cplus and may not be used as variable,
 function, type, or parameter names in `.cplus` / `.hplus` source files:
 
-```
-weak    unique    move    class
+```cplus
+weak    unique    move
 ```
 
 Using a reserved keyword as an identifier is a transpile-time error.
@@ -124,7 +124,7 @@ The transpiler ships `inc/cplus_cleanup.h` with pre-generated wrappers for
 common C standard and POSIX destructors:
 
 | cplus `unique(fn)` | generated wrapper | note |
-|--------------------|-------------------|------|
+| -------------------- | ------------------- | ------ |
 | `unique` (no destructor) | `_cplus_cleanup_free` | default |
 | `unique(free)` | `_cplus_cleanup_free` | explicit — same result |
 | `unique(fclose)` | `_cplus_cleanup_fclose` | |
@@ -235,13 +235,13 @@ fn(p);           /* OK   : passing as argument is a non-owning use */
 
 ---
 
-## Feature 5 — `class` declaration
+## Feature 5 — `struct` auto-typedef
 
 ### Syntax
 
 ```cplus
-/* in .hplus */
-class Name {
+/* file scope only */
+struct Name {
     T field1;
     T field2;
     /* ... */
@@ -250,23 +250,25 @@ class Name {
 
 ### Semantics
 
-`class` is the cplus spelling of a named aggregate type. In v2 all fields are
-implicitly public. Access modifiers (`public`, `private`) are reserved for v3.
+Any `struct` declaration at file scope automatically receives a `typedef`
+in the generated output. This eliminates the `struct` prefix when using the
+type name in C code — standard boilerplate that C programmers write on every
+named struct declaration.
 
-The type `Name` is usable directly (no `struct Name` prefix) in all `.cplus`
-and `.hplus` files — identical to the C++ convention.
+`struct` declarations inside function or block scope are passthrough — no
+typedef is generated, C semantics apply unchanged.
 
 ### Lowering
 
 ```cplus
-class Person {
+struct Person {
     char name[64];
     int  age;
 };
 ```
 
 ```c
-/* generated in the .h file */
+/* generated: typedef emitted automatically */
 typedef struct Person Person;
 struct Person {
     char name[64];
@@ -276,27 +278,24 @@ struct Person {
 
 ### Rules
 
-- `class` is valid at file scope and as a nested type inside another `class`
-  (consistent with C23 nested `struct` rules).
-- Nested `class` lowering: each class is emitted as a separate
-  `typedef struct` + `struct` pair, in declaration order (inner before outer).
-- Fields may be any C23 type, including pointers, arrays, and nested classes.
-- Methods are not supported in v2 — they are scoped to v3+.
-- Access modifiers (`public`, `private`) are reserved keywords but produce a
-  transpile-time error if used in v2.
-- `class` inside a function body is a transpile-time error (E207).
-- The generated `typedef` makes `Name` available to C code that includes the
-  generated `.h` — no `struct` prefix needed in the C world either.
+- `struct` at file scope → `typedef struct Name Name;` + `struct Name { ... };` in output.
+- `struct` at function/block scope → passthrough (no typedef; C23 semantics unchanged).
+- The generated `typedef` makes `Name` available without `struct` prefix in both
+  `.cplus` source and generated C.
+- Nested structs: each `struct` at file scope gets its own typedef, in declaration
+  order (inner before outer).
+- Fields may be any C23 type, including pointers, arrays, and nested structs.
+- Function prototypes inside a `struct` are a v3 feature — not supported in v2.
 
-### Nested `class` example
+### Nested `struct` example
 
 ```cplus
-class Address {
+struct Address {
     char street[128];
     int  zip;
 };
 
-class Person {
+struct Person {
     char    name[64];
     int     age;
     Address addr;
@@ -322,7 +321,7 @@ struct Person {
 
 ## Transpiler pipeline (v2)
 
-```
+```plaitext
 .cplus / .hplus source
         │
         ▼
@@ -330,11 +329,11 @@ struct Person {
         │
         ▼
    Symbol table builder
-   (tracks: unique vars, moved state, class names)
+   (tracks: unique vars, moved state, struct names at file scope)
         │
         ▼
    Lowering pass
-   ├── class  → typedef struct (inner-before-outer for nested)
+   ├── struct → auto-typedef (file scope only)
    ├── weak   → strip qualifier (identity)
    ├── unique → emit cleanup wrapper + __attribute__((cleanup(...)))
    └── move   → split into assignment + NULL; inject use-after-move asserts
@@ -356,12 +355,12 @@ stream of C23 passthrough tokens.
 
 ### Token types
 
-```
+```plaintext
 New in v2:
   TK_WEAK       — keyword 'weak'
   TK_UNIQUE     — keyword 'unique'
   TK_MOVE       — keyword 'move'
-  TK_CLASS      — keyword 'class'
+  TK_STRUCT     — keyword 'struct' (detected at file scope for auto-typedef)
 
 Minimal C23 tokens recognized by the scanner:
   TK_IDENT      — identifier
@@ -378,7 +377,7 @@ Minimal C23 tokens recognized by the scanner:
 
 ### Grammar of recognized cplus constructs
 
-```
+```ebnf
 weak_decl   := TK_WEAK type_ref TK_STAR TK_IDENT [TK_ASSIGN expr] TK_SEMI
 
 unique_decl := TK_UNIQUE TK_LPAREN TK_IDENT TK_RPAREN
@@ -387,8 +386,9 @@ unique_decl := TK_UNIQUE TK_LPAREN TK_IDENT TK_RPAREN
 init_expr   := move_expr | expr
 move_expr   := TK_MOVE TK_LPAREN TK_IDENT TK_RPAREN
 
-class_decl  := TK_CLASS TK_IDENT TK_LBRACE field_list TK_RBRACE TK_SEMI
-field_list  := (class_decl | TK_PASSTHROUGH)*
+struct_decl := TK_STRUCT TK_IDENT TK_LBRACE field_list TK_RBRACE TK_SEMI
+               (matched at file scope only; function scope is TK_PASSTHROUGH)
+field_list  := TK_PASSTHROUGH*
 ```
 
 ### Design principle
@@ -396,10 +396,10 @@ field_list  := (class_decl | TK_PASSTHROUGH)*
 Everything that does not match a cplus construct is `TK_PASSTHROUGH` and is
 copied verbatim to the output. The scanner only needs to track:
 
-- Brace depth (to find the end of `class` bodies).
+- Brace depth (to find the end of file-scope `struct` bodies).
 - The symbol table of `unique` variables and their moved/live state.
 - Whether the current position is at file scope or inside a function body
-  (for E207 enforcement on `class`).
+  (to determine if a `struct` declaration receives auto-typedef).
 
 This design keeps the transpiler small, auditable, and independent of C23
 grammar evolution. A full C23 parse is only required in v5+ when method
@@ -415,7 +415,7 @@ bodies and expression-level ownership tracking are needed.
 #ifndef PERSON_H
 #define PERSON_H
 
-class Person {
+struct Person {
     char name[64];
     int  age;
 };
@@ -519,20 +519,18 @@ int main(void) {
 ## Error catalogue (v2)
 
 | Code | Message | Trigger |
-|------|---------|---------|
+| ------ | --------- | --------- |
 | `E201` | `reserved keyword used as identifier: 'X'` | `int weak = 0;` |
 | `E202` | `unique declaration requires an initializer` | `unique(fn) T *p;` |
 | `E203` | `cannot copy a unique pointer: 'X'` | `T *q = unique_p;` |
 | `E204` | `move() is only valid as a unique initializer` | `fn(move(p))` |
-| `E205` | `access modifiers not supported in v2` | `class A { private: int x; };` |
-| `E206` | `class declaration is only valid at file scope` | `class` inside function |
 
 ---
 
 ## Backward compatibility
 
 All valid v1 `.cplus` / `.hplus` sources are valid v2 sources, provided they do
-not use any of the new reserved keywords (`weak`, `unique`, `move`, `class`) as
+not use any of the new reserved keywords (`weak`, `unique`, `move`) as
 identifiers.
 
 ---
@@ -540,7 +538,7 @@ identifiers.
 ## Future versions (informative)
 
 | Version | Planned additions |
-|---------|------------------|
-| v3 | `class` with methods; `public` / `private` fields (transpiler-enforced, flat struct — Strategy B); constructors and destructors as named methods |
+| --------- | ------------------ |
+| v3 | Function prototypes inside `struct`; `Type.fn()` definition syntax → `Type_fn()` lowering; `static` in prototype/definition → private (emitted as `static` in output) |
 | v4 | `shared(fn) T *ptr` — reference-counted owning pointer with runtime support |
-| v5+ | OO syntax: inheritance by composition, virtual dispatch |
+| v5+ | Dot-call syntax `obj.method(args)` → `Type_method(&obj, args)`; requires type inference across the file |

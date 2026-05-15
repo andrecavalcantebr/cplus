@@ -21,11 +21,11 @@
 /* ---------------------------------------------------------------------- */
 
 typedef enum {
-    NODE_PASSTHROUGH,  /* verbatim C23 text — not a cplus construct        */
-    NODE_CLASS,        /* class Name { fields }                            */
-    NODE_WEAK_DECL,    /* weak T *name [= expr]                            */
-    NODE_UNIQUE_DECL,  /* unique[(dtor)] T *name = init                    */
-    NODE_MOVE_EXPR     /* move(source) — child of NODE_UNIQUE_DECL.init    */
+    NODE_PASSTHROUGH,   /* verbatim C23 text — not a cplus construct        */
+    NODE_STRUCT_DECL,   /* struct Name { fields } at file scope             */
+    NODE_WEAK_DECL,     /* weak T *name [= expr]                            */
+    NODE_UNIQUE_DECL,   /* unique[(dtor)] T *name = init                    */
+    NODE_MOVE_EXPR      /* move(source) — child of NODE_UNIQUE_DECL.init    */
 } NodeKind;
 
 /* ---------------------------------------------------------------------- */
@@ -70,18 +70,17 @@ struct AstNode {
         } passthrough;
 
         /*
-         * NODE_CLASS
-         * class Name { fields }
+         * NODE_STRUCT_DECL
+         * struct Name { fields } — at file scope only; auto-typedef emitted.
          *
          * `name`   — heap-allocated identifier string.
-         * `fields` — linked list of child nodes (NODE_PASSTHROUGH for C23
-         *            field text, or nested NODE_CLASS for inner classes).
+         * `fields` — linked list of child NODE_PASSTHROUGH nodes (field text).
          *            May be NULL for an empty body.
          */
         struct {
             char    *name;
             AstNode *fields;  /* first child; walk via ->next              */
-        } class_decl;
+        } struct_decl;
 
         /*
          * NODE_WEAK_DECL
@@ -149,12 +148,12 @@ struct AstNode {
 AstNode *ast_passthrough(const char *text, size_t len, int line, int col);
 
 /*
- * ast_class — class Name { fields }
+ * ast_struct_decl — struct Name { fields } at file scope
  * `name`   — NUL-terminated identifier.
  * `fields` — head of the child field list (may be NULL).
  *            Ownership is transferred to the new node.
  */
-AstNode *ast_class(const char *name, AstNode *fields, int line, int col);
+AstNode *ast_struct_decl(const char *name, AstNode *fields, int line, int col);
 
 /*
  * ast_weak_decl — weak T *name [= init_text]
@@ -210,7 +209,7 @@ const char *ast_node_kind_name(NodeKind kind);
  *
  * Output example:
  *   PASSTHROUGH len=42 line=1:1
- *   CLASS "Point" line=1:1
+ *   STRUCT_DECL "Point" line=1:1
  *     PASSTHROUGH len=12 line=2:5
  *   UNIQUE_DECL type="Person" name="alice" dtor="person_destroy" line=10:5
  *     MOVE_EXPR source="tmp" line=10:35
